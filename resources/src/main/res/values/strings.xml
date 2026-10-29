@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">LumiformTestApp</string>
+    <!-- unchecked strings -->
+    <string name="form_empty">No form loaded yet.</string>
+    <string name="image_title">Image</string>
+    <string name="image_unavailable">Image unavailable.</string>
+    <string name="back">Back</string>
+</resources>

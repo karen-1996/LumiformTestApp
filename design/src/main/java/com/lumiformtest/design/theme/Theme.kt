@@ -1,4 +1,4 @@
-package com.lumiformtest.app.ui.theme
+package com.lumiformtest.design.theme
 
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme

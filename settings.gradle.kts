@@ -24,3 +24,7 @@ dependencyResolutionManagement {
 
 rootProject.name = "LumiformTestApp"
 include(":app")
+include(":base")
+include(":design")
+include(":form")
+include(":resources")

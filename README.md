@@ -4,8 +4,76 @@ My implementation of the Lumiform Android coding challenge.
 
 ## Status
 
-This first commit sets up a minimal Compose app. The form viewer, offline storage,
-and custom MVI implementation will follow in small, focused commits.
+The foundation includes feature modules, my custom MVI base, Hilt, and Navigation 3.
+The form screen is empty for now. Fetching content, offline storage, choice
+selection, and image loading will follow in small, focused changes.
+
+## Startup
+
+`SplashActivity` is the launcher and uses AndroidX SplashScreen. It opens
+`MainActivity` and finishes, so Back does not return to the splash. I keep the
+system splash during this handoff instead of drawing a second splash layout.
+There is no fixed delay or network request in the launcher.
+
+This follows Android's [routing Activity pattern](https://developer.android.com/develop/ui/views/launch/splash-screen/migrate).
+The custom-splash lint check is disabled only on this Activity because it never
+draws its own splash content.
+
+## Structure
+
+- `app`: application, splash launcher, MainActivity, and root navigation.
+- `base`: MVI contracts and `BaseCoroutineViewModel`.
+- `design`: shared Compose theme.
+- `resources`: all Android resource files, including strings, icons, XML themes,
+  and backup configuration.
+- `form`: form and image destinations, UI, and ViewModels. The data and domain
+  layers will live inside this feature when content loading is added.
+
+I keep the layers inside each feature, so changes to the form stay together.
+There are no separate data or domain Gradle modules.
+
+All Android `res/` files live in `resources/src/main/res`. Modules that use them
+depend directly on `:resources` and import `com.lumiformtest.resources.R`.
+I keep Compose theme code in `:design`, as in ASA.
+
+## Layer mapping
+
+I use separate models and explicit mappers at each layer boundary:
+
+```text
+DTOs / Room entities -> domain models -> UI models
+       data/mapper              presentation/mapper
+```
+
+Data mappers handle storage and API formats. Presentation mappers prepare domain
+data for the screen, including hierarchy depth and display state. This keeps
+DTOs, entities, and domain models out of screen state and composables.
+
+Mappers stay inside the feature and have no side effects. Reverse mappings are
+added for actual write operations. These will be implemented with the content
+models in the next phases; the current shell has no content models to map yet.
+
+## MVI
+
+The UI sends an `Action` to the ViewModel. I handle state changes and side effects
+in the same `onAction` function. For this small feature, it keeps the flow easy
+to follow without separate reducer and effect-handler classes.
+
+Actions are queued in order. Work launched by an action can finish later, so it
+must edit the latest state rather than write an old state snapshot. The initial
+state is passed to the base constructor to avoid calling an overridden method
+before the feature ViewModel is initialized.
+
+`StateFlow` holds the screen state. Navigation and temporary UI events use separate
+channels with one consumer each. They can wait for a collector while the ViewModel
+is alive, but are not durable storage or an exactly-once delivery mechanism.
+The action queue is unlimited, following my ASA implementation, and is intended
+for discrete UI actions rather than continuous input streams.
+
+The UI applies navigation commands to a saved Navigation 3 back stack. Serializable
+keys hold only navigation arguments, and each entry owns its ViewModel and saved
+Compose state. The image destination is wired, but its content will be added with
+the data layer; there is no sample image button in the form screen.
 
 ## Setup
 
@@ -22,6 +90,33 @@ and custom MVI implementation will follow in small, focused commits.
 ```
 
 On Windows, use `gradlew.bat`. Run the `app` configuration on an emulator or device
-with API 26 or newer. The current screen only displays the app name.
+with API 26 or newer.
 
-Feature tests and their run commands will be added with the implementation.
+## Tests
+
+```shell
+./gradlew :base:testDebugUnitTest :form:testDebugUnitTest
+```
+
+The JVM tests cover action ordering, overlapping state changes, navigation and
+event outputs, cancellation, and serialization of destination keys.
+
+With an emulator or device connected:
+
+```shell
+./gradlew :app:connectedDebugAndroidTest
+```
+
+The navigation device test checks that the image destination survives saved
+Compose state restoration and that Back returns to the form. It uses an empty
+Hilt Activity available only in debug builds. Full process-death and offline
+tests will follow when the data layer is implemented.
+
+The startup device test launches the app through its launcher intent and checks
+that MainActivity becomes the task root after the splash handoff.
+
+## AI development guidance
+
+[aidev](aidev/README.md) contains the project skills and how they are used.
+`AGENTS.md` routes relevant work to them. The skills record my architecture and
+review choices; they do not replace code review or tests.
