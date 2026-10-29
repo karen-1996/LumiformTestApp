@@ -10,8 +10,8 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 
-private val DarkColorScheme = darkColorScheme()
-private val LightColorScheme = lightColorScheme()
+private val DarkColorScheme by lazy { darkColorScheme() }
+private val LightColorScheme by lazy { lightColorScheme() }
 
 @Composable
 fun LumiformTestAppTheme(

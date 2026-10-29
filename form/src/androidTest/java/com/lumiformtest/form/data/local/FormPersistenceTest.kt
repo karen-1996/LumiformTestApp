@@ -8,6 +8,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.lumiformtest.form.data.mapper.FormEntityMapper
 import com.lumiformtest.form.data.remote.FormRemoteDataSource
 import com.lumiformtest.form.data.repository.OfflineFormRepository
+import com.lumiformtest.form.domain.model.FormObservation
 import com.lumiformtest.form.domain.model.FormDocument
 import com.lumiformtest.form.domain.model.FormItem
 import com.lumiformtest.form.domain.model.FormPage
@@ -40,8 +41,8 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class FormPersistenceTest {
     private val name = "form-persistence-test.db"
-    private val mapper = FormEntityMapper()
-    private val time = Instant.parse("2026-10-29T12:00:00Z")
+    private val mapper by lazy { FormEntityMapper() }
+    private val time by lazy { Instant.parse("2026-10-29T12:00:00Z") }
     private lateinit var context: Context
     private lateinit var database: FormDatabase
 
@@ -88,7 +89,7 @@ class FormPersistenceTest {
         )
 
         assertEquals(RefreshFormResult.Failure(FormRefreshFailure.FETCH), repository.refreshForm())
-        assertEquals(FormSnapshot(document(), time), repository.observeForm().first())
+        assertEquals(FormObservation.Snapshot(FormSnapshot(document(), time)), repository.observeForm().first())
     }
 
     @Test

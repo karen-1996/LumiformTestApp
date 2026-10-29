@@ -34,10 +34,10 @@ class AppNavigationTest {
             LumiformTestAppTheme { AppNavigation(savedBackStack) }
         }
 
-        val emptyForm = compose.activity.getString(R.string.form_empty)
+        val formTitle = compose.activity.getString(R.string.form_title)
         val imageUnavailable = compose.activity.getString(R.string.image_unavailable)
         val back = compose.activity.getString(R.string.back)
-        compose.onNodeWithText(emptyForm).assertIsDisplayed()
+        compose.onNodeWithText(formTitle).assertIsDisplayed()
 
         compose.runOnIdle { backStack.add(FormDestination.Image(imageId = 9)) }
         compose.onNodeWithText(imageUnavailable).assertIsDisplayed()
@@ -50,7 +50,7 @@ class AppNavigationTest {
         }
         compose.onNodeWithText(imageUnavailable).assertIsDisplayed()
         compose.onNodeWithText(back).performClick()
-        compose.onNodeWithText(emptyForm).assertIsDisplayed()
+        compose.onNodeWithText(formTitle).assertIsDisplayed()
         compose.runOnIdle { assertEquals(listOf(FormDestination.Form), backStack.toList()) }
     }
 }

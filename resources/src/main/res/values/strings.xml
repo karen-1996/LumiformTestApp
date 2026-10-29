@@ -1,8 +1,24 @@
 <resources>
     <string name="app_name">LumiformTestApp</string>
     <!-- unchecked strings -->
-    <string name="form_empty">No form loaded yet.</string>
+    <string name="form_empty">This form has no content.</string>
     <string name="image_title">Image</string>
     <string name="image_unavailable">Image unavailable.</string>
     <string name="back">Back</string>
+    <string name="form_title">Form</string>
+    <string name="form_refresh">Refresh</string>
+    <string name="form_retry">Retry</string>
+    <string name="form_refreshing">Refreshing…</string>
+    <string name="form_last_updated">Last updated: %1$s</string>
+    <string name="form_single_choice">Single choice</string>
+    <string name="form_multiple_choice">Multiple choice</string>
+    <string name="form_response_option">• %1$s</string>
+    <string name="form_load_error">Couldn\'t load the form. Please try again.</string>
+    <string name="form_invalid_content">The received form is invalid. Please try again.</string>
+    <string name="form_save_error">Couldn\'t save the form. Please try again.</string>
+    <string name="form_read_error">Couldn\'t read the saved form. Please try again.</string>
+    <string name="form_cached_refresh_error">Couldn\'t refresh. Showing saved content.</string>
+    <string name="form_cached_invalid_content">The received form is invalid. Showing saved content.</string>
+    <string name="form_cached_save_error">Couldn\'t save the updated form. Showing saved content.</string>
+    <string name="form_cached_read_error">Couldn\'t read saved updates. Showing the last available form.</string>
 </resources>

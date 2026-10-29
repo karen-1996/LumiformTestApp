@@ -3,7 +3,9 @@ package com.lumiformtest.base.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
@@ -18,16 +20,20 @@ abstract class BaseCoroutineViewModel<A : Action, V : ViewState, N : NavDestinat
     initialState: V
 ) : ViewModel() {
 
-    private val _viewState = MutableStateFlow(initialState)
-    val viewState = _viewState.asStateFlow()
+    private val _viewState: MutableStateFlow<V> by lazy { MutableStateFlow(initialState) }
+    val viewState: StateFlow<V> by lazy { _viewState.asStateFlow() }
 
     // This queue is for discrete UI actions, not high-frequency streams.
-    private val actionChannel = Channel<A>(Channel.UNLIMITED)
-    private val navigationChannel = Channel<N>(Channel.BUFFERED)
-    private val events = Channel<E>(Channel.BUFFERED)
+    private val actionChannelDelegate = lazy { Channel<A>(Channel.UNLIMITED) }
+    private val navigationChannelDelegate = lazy { Channel<N>(Channel.BUFFERED) }
+    private val eventsDelegate = lazy { Channel<E>(Channel.BUFFERED) }
 
-    val navigateFlow = navigationChannel.receiveAsFlow()
-    val eventChannel = events.receiveAsFlow()
+    private val actionChannel: Channel<A> by actionChannelDelegate
+    private val navigationChannel: Channel<N> by navigationChannelDelegate
+    private val events: Channel<E> by eventsDelegate
+
+    val navigateFlow: Flow<N> by lazy { navigationChannel.receiveAsFlow() }
+    val eventFlow: Flow<E> by lazy { events.receiveAsFlow() }
 
     init {
         viewModelScope.launch {
@@ -57,8 +63,9 @@ abstract class BaseCoroutineViewModel<A : Action, V : ViewState, N : NavDestinat
     }
 
     override fun onCleared() {
-        actionChannel.cancel()
-        navigationChannel.cancel()
-        events.cancel()
+        // Clearing should not create channels that were never used.
+        if (actionChannelDelegate.isInitialized()) actionChannel.cancel()
+        if (navigationChannelDelegate.isInitialized()) navigationChannel.cancel()
+        if (eventsDelegate.isInitialized()) events.cancel()
     }
 }

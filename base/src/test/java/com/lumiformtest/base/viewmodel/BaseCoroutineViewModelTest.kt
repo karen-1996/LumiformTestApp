@@ -78,7 +78,7 @@ class BaseCoroutineViewModelTest {
         runCurrent()
 
         assertEquals(TestNavigation.Details, viewModel.navigateFlow.first())
-        assertEquals(TestEvent.Message, viewModel.eventChannel.first())
+        assertEquals(TestEvent.Message, viewModel.eventFlow.first())
         assertEquals(3, viewModel.viewState.value.count)
     }
 
@@ -90,6 +90,18 @@ class BaseCoroutineViewModelTest {
         assertEquals(TestNavigation.Details, viewModel.navigateFlow.first())
 
         assertNull(withTimeoutOrNull(1) { viewModel.navigateFlow.first() })
+    }
+
+    @Test
+    fun `clearing before the action subscription starts discards queued work`() = runTest(dispatcher) {
+        val viewModel = createViewModel()
+        viewModel.sendAction(TestAction.Add(1))
+
+        store.clear()
+        runCurrent()
+
+        assertEquals(emptyList<Int>(), viewModel.previousCounts)
+        assertEquals(0, viewModel.viewState.value.count)
     }
 
     @Test
@@ -123,7 +135,7 @@ private enum class TestEvent : Event { Message }
 private class TestViewModel : BaseCoroutineViewModel<
     TestAction, TestState, TestNavigation, TestEvent
 >(TestState()) {
-    val previousCounts = mutableListOf<Int>()
+    val previousCounts by lazy { mutableListOf<Int>() }
 
     override fun onAction(action: TestAction, prevState: TestState) {
         previousCounts += prevState.count

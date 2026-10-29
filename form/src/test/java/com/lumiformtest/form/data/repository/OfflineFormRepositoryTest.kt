@@ -4,6 +4,7 @@ import com.lumiformtest.form.data.local.FormLocalDataSource
 import com.lumiformtest.form.data.local.FormStorageException
 import com.lumiformtest.form.data.remote.FormRemoteDataSource
 import com.lumiformtest.form.data.remote.InvalidFormContentException
+import com.lumiformtest.form.domain.model.FormObservation
 import com.lumiformtest.form.domain.model.FormDocument
 import com.lumiformtest.form.domain.model.FormPage
 import com.lumiformtest.form.domain.model.FormRefreshFailure
@@ -22,21 +23,23 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertThrows
 import org.junit.Test
 import retrofit2.HttpException
 import retrofit2.Response
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class OfflineFormRepositoryTest {
-    private val time = Instant.parse("2026-10-29T12:00:00Z")
-    private val clock = Clock.fixed(time, ZoneOffset.UTC)
-    private val saved = FormSnapshot(document("Saved"), time.minusSeconds(60))
+    private val time by lazy { Instant.parse("2026-10-29T12:00:00Z") }
+    private val clock by lazy { Clock.fixed(time, ZoneOffset.UTC) }
+    private val saved by lazy { FormSnapshot(document("Saved"), time.minusSeconds(60)) }
 
     @Test
     fun `observation reads cache immediately without requesting the network`() = runTest {
@@ -44,7 +47,7 @@ class OfflineFormRepositoryTest {
         val local = FakeLocal(saved)
         val repository = OfflineFormRepository(FormRemoteDataSource { fetches++; document("New") }, local, clock)
 
-        assertEquals(saved, repository.observeForm().first())
+        assertEquals(FormObservation.Snapshot(saved), repository.observeForm().first())
         assertEquals(0, fetches)
     }
 
@@ -60,11 +63,11 @@ class OfflineFormRepositoryTest {
 
         val refresh = async { repository.refreshForm() }
         writeStarted.await()
-        assertEquals(saved, repository.observeForm().first())
+        assertEquals(FormObservation.Snapshot(saved), repository.observeForm().first())
         finishWrite.complete(Unit)
 
         assertEquals(RefreshFormResult.Success, refresh.await())
-        assertEquals(FormSnapshot(updated, time), repository.observeForm().first())
+        assertEquals(FormObservation.Snapshot(FormSnapshot(updated, time)), repository.observeForm().first())
     }
 
     @Test
@@ -79,7 +82,7 @@ class OfflineFormRepositoryTest {
             val repository = OfflineFormRepository(FormRemoteDataSource { throw error }, local, clock)
 
             assertEquals(RefreshFormResult.Failure(reason), repository.refreshForm())
-            assertEquals(saved, repository.observeForm().first())
+            assertEquals(FormObservation.Snapshot(saved), repository.observeForm().first())
             assertEquals(0, local.writes)
         }
     }
@@ -90,7 +93,7 @@ class OfflineFormRepositoryTest {
         val repository = OfflineFormRepository(FormRemoteDataSource { throw IOException("Offline") }, local, clock)
 
         assertEquals(RefreshFormResult.Failure(FormRefreshFailure.FETCH), repository.refreshForm())
-        assertEquals(null, repository.observeForm().first())
+        assertEquals(FormObservation.Snapshot(null), repository.observeForm().first())
     }
 
     @Test
@@ -99,7 +102,7 @@ class OfflineFormRepositoryTest {
         val repository = OfflineFormRepository(FormRemoteDataSource { document("Updated") }, local, clock)
 
         assertEquals(RefreshFormResult.Failure(FormRefreshFailure.STORAGE), repository.refreshForm())
-        assertEquals(saved, repository.observeForm().first())
+        assertEquals(FormObservation.Snapshot(saved), repository.observeForm().first())
     }
 
     @Test
@@ -172,10 +175,35 @@ class OfflineFormRepositoryTest {
         assertEquals(saved, local.state.value)
     }
 
+    @Test
+    fun `saved content read failures become a domain result`() = runTest {
+        val local = object : FormLocalDataSource {
+            override fun observeForm() = flow<FormSnapshot?> { throw FormStorageException("Cannot read") }
+            override suspend fun replaceForm(document: FormDocument, lastUpdated: Instant) = Unit
+        }
+        val repository = OfflineFormRepository(FormRemoteDataSource { document("New") }, local, clock)
+
+        assertEquals(FormObservation.ReadFailure, repository.observeForm().first())
+    }
+
+    @Test
+    fun `observation does not hide cancellation or programming errors`() {
+        for (error in listOf(CancellationException("Stopped"), IllegalStateException("Bug"))) {
+            val local = object : FormLocalDataSource {
+                override fun observeForm() = flow<FormSnapshot?> { throw error }
+                override suspend fun replaceForm(document: FormDocument, lastUpdated: Instant) = Unit
+            }
+            val repository = OfflineFormRepository(FormRemoteDataSource { document("New") }, local, clock)
+
+            val thrown = assertThrows(error.javaClass) { runTest { repository.observeForm().first() } }
+            assertEquals(error, thrown)
+        }
+    }
+
     private fun document(title: String) = FormDocument(listOf(FormPage(1, title, emptyList())))
 
     private class FakeLocal(initial: FormSnapshot?) : FormLocalDataSource {
-        val state = MutableStateFlow(initial)
+        val state by lazy { MutableStateFlow(initial) }
         var writes = 0
         var beforeWrite: suspend () -> Unit = {}
 

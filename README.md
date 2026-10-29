@@ -6,8 +6,10 @@ My implementation of the Lumiform Android coding challenge.
 
 The foundation includes feature modules, my custom MVI base, Hilt, and Navigation 3.
 The form feature has domain models, JSON validation, API fetching, and relational
-offline storage. The screen is still empty; the next UI phase will connect the
-observe/refresh use cases. Choice persistence and image loading follow later.
+offline storage. The screen observes saved content, refreshes on first open, and
+renders pages, nested sections, text, choice labels, and image titles. It includes
+loading, empty, error/retry, refresh progress, and last-update states. Choice
+interaction/persistence and image loading follow in their own phases.
 
 ## Startup
 
@@ -51,9 +53,10 @@ Data mappers handle storage and API formats. Presentation mappers prepare domain
 data for the screen, including hierarchy depth and display state. This keeps
 DTOs, entities, and domain models out of screen state and composables.
 
-Mappers stay inside the feature and have no side effects. DTO/domain and
-entity/domain mappers are implemented. Presentation mapping will be added with
-the hierarchy UI. Reverse mappings are added for actual write operations.
+Mappers stay inside the feature and have no side effects. DTO/domain,
+entity/domain, and domain/UI mappers are implemented. The presentation mapper
+flattens the tree in source order and preserves parent IDs, depth, and question
+metadata. Reverse mappings are added for actual write operations.
 
 ## Content contract
 
@@ -98,7 +101,9 @@ by null. Cached read errors propagate rather than pretending the cache is empty.
 A mutex covers the complete fetch-and-save operation, so overlapping refreshes
 cannot commit out of order. Cancellation propagates, and expected fetch, content,
 and storage failures are exposed as domain results. ObserveFormUseCase and
-RefreshFormUseCase provide the boundary for the later MVI integration.
+RefreshFormUseCase provide the boundary for the MVI integration. Expected saved
+content read failures become a domain observation result; retry restarts a failed
+observer. The ViewModel does not import Room or data-layer exceptions.
 
 The version 1 schema is exported under `form/schemas` and kept in Git. There is
 no destructive-migration fallback. Answers do not exist in this schema yet;
@@ -121,6 +126,21 @@ channels with one consumer each. They can wait for a collector while the ViewMod
 is alive, but are not durable storage or an exactly-once delivery mechanism.
 The action queue is unlimited, following my ASA implementation, and is intended
 for discrete UI actions rather than continuous input streams.
+
+I prefer lazy initialization where creation can safely wait until first use,
+following ASA. The MVI state/channels, parser configuration, refresh mutex, fallback
+theme palettes, and preview data use lazy properties. Conditional injected
+dependencies use Dagger Lazy; release builds do not create the unused logger.
+Compose values keep their lifecycle-aware remember behavior, and cleanup does not
+initialize unused resources.
+
+The form ViewModel observes Room and starts one refresh per ViewModel instance.
+Repeated refresh taps are coalesced while work is active. Cache reads and refresh
+have separate state: a fast fetch failure cannot hide a pending cache read, and
+refresh success waits for Room rather than publishing response content directly.
+Saved content and its timestamp remain visible on refresh failure. Messages do not
+infer connectivity from request failures. The list uses stable IDs and saved scroll
+state; indentation and section typography have readable lower bounds.
 
 The UI applies navigation commands to a saved Navigation 3 back stack. Serializable
 keys hold only navigation arguments, and each entry owns its ViewModel and saved
@@ -167,7 +187,8 @@ with API 26 or newer.
 ```
 
 The JVM tests cover MVI behavior, destination keys, parsing, entity/domain mapping,
-HTTP responses, cache-preserving failures, cancellation, and overlapping refreshes.
+HTTP responses, cache-preserving failures, cancellation, overlapping refreshes,
+domain/UI hierarchy mapping, and MVI cache/refresh timing and recovery.
 Networking tests also check the shared transport and debug/release logging policy.
 HTTP tests use MockWebServer and do not depend on the public endpoint. The fixture in
 `form/src/test/resources/fixtures/lumiform-android-test.json` is a snapshot of the
@@ -183,15 +204,25 @@ With an emulator or device connected:
 
 The navigation device test checks that the image destination survives saved
 Compose state restoration and that Back returns to the form. It uses an empty
-Hilt Activity available only in debug builds. Full process-death and offline UI
-tests will follow with screen integration.
+Hilt Activity available only in debug builds. This is not a full process-death
+navigation test.
 
 The startup device test launches the app through its launcher intent and checks
 that MainActivity becomes the task root after the splash handoff.
 
+Stateless form screen tests cover row kinds/headings, retry actions, cached content
+during refresh/failure, empty versus loading, saved list position, and long nested
+text at a large font scale in both themes on a small layout width.
+
 The form device tests use a real Room database to check reopen persistence,
 offline refresh failure, foreign-key rollback, empty-cache semantics, and complete
 observed snapshots. They create and remove a separate test database.
+
+The real app was also checked manually after a successful fetch: with the test
+emulator's network disabled and no active network, a force-stop/relaunch displayed
+saved content, retained the successful update time, and offered retry after the
+refresh failed. This verifies offline form content, not downloaded images or
+persisted selections, which are later phases.
 
 ## AI development guidance
 

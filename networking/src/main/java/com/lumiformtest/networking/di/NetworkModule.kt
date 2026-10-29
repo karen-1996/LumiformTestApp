@@ -2,6 +2,7 @@ package com.lumiformtest.networking.di
 
 import com.lumiformtest.networking.BuildConfig
 import dagger.Module
+import dagger.Lazy
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
@@ -22,10 +23,10 @@ internal object NetworkModule {
 
     @Provides
     @Singleton
-    fun client(loggingInterceptor: HttpLoggingInterceptor): OkHttpClient = OkHttpClient.Builder()
+    fun client(loggingInterceptor: Lazy<HttpLoggingInterceptor>): OkHttpClient = OkHttpClient.Builder()
         .apply {
             // Request and response bodies are only logged in debug builds.
-            if (BuildConfig.DEBUG) addInterceptor(loggingInterceptor)
+            if (BuildConfig.DEBUG) addInterceptor(loggingInterceptor.get())
         }
         .connectTimeout(10, TimeUnit.SECONDS)
         .readTimeout(10, TimeUnit.SECONDS)

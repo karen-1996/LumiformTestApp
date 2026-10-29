@@ -27,6 +27,10 @@ import retrofit2.Retrofit
 @Retention(AnnotationRetention.BINARY)
 internal annotation class FormIoDispatcher
 
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+internal annotation class FormDefaultDispatcher
+
 @Module
 @InstallIn(SingletonComponent::class)
 internal object FormDataModule {
@@ -48,6 +52,10 @@ internal object FormDataModule {
     @Provides
     @FormIoDispatcher
     fun ioDispatcher(): CoroutineDispatcher = Dispatchers.IO
+
+    @Provides
+    @FormDefaultDispatcher
+    fun defaultDispatcher(): CoroutineDispatcher = Dispatchers.Default
 }
 
 @Module

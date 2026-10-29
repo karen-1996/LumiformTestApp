@@ -12,7 +12,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class FormJsonParserTest {
-    private val parser = FormJsonParser(FormDataMapper())
+    private val parser by lazy { FormJsonParser(FormDataMapper()) }
 
     @Test
     fun `challenge sample preserves page titles and the complete hierarchy in order`() {

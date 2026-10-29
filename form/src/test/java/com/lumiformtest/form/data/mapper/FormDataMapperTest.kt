@@ -12,12 +12,14 @@ import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class FormDataMapperTest {
-    private val mapper = FormDataMapper()
-    private val responseSet = ResponseSetDto(
-        id = 10,
-        multipleSelection = false,
-        responses = listOf(ResponseOptionDto(1, "First", 0), ResponseOptionDto(2, "Second", null))
-    )
+    private val mapper by lazy { FormDataMapper() }
+    private val responseSet by lazy {
+        ResponseSetDto(
+            id = 10,
+            multipleSelection = false,
+            responses = listOf(ResponseOptionDto(1, "First", 0), ResponseOptionDto(2, "Second", null))
+        )
+    }
 
     @Test
     fun `direct questions map to domain types in source order`() {

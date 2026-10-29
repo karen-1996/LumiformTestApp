@@ -31,5 +31,5 @@ internal fun FormRoute(
         }
     }
 
-    FormScreen(state = state)
+    FormScreen(state = state, onAction = { viewModel.sendAction(it) })
 }

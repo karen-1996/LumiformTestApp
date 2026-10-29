@@ -8,9 +8,11 @@ import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 
 internal class FormJsonParser @Inject constructor(private val mapper: FormDataMapper) {
-    private val json = Json {
-        // Extra metadata is safe to ignore. Unknown content types still fail decoding.
-        ignoreUnknownKeys = true
+    private val json by lazy {
+        Json {
+            // Extra metadata is safe to ignore. Unknown content types still fail decoding.
+            ignoreUnknownKeys = true
+        }
     }
 
     fun parse(content: String): FormDocument {

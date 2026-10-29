@@ -10,8 +10,8 @@ import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class FormEntityMapperTest {
-    private val mapper = FormEntityMapper()
-    private val time = Instant.parse("2026-10-29T12:00:00Z")
+    private val mapper by lazy { FormEntityMapper() }
+    private val time by lazy { Instant.parse("2026-10-29T12:00:00Z") }
 
     @Test
     fun `the complete sample survives relational mapping even when SQL rows are unordered`() {
