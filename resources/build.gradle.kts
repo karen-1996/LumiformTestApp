@@ -4,8 +4,6 @@ plugins {
 
 android {
     namespace = "com.lumiformtest.resources"
-    compileSdk { version = release(37) }
-    defaultConfig { minSdk = 26 }
 }
 
 dependencies {

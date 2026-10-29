@@ -5,9 +5,9 @@ My implementation of the Lumiform Android coding challenge.
 ## Status
 
 The foundation includes feature modules, my custom MVI base, Hilt, and Navigation 3.
-The form feature now has domain models, JSON decoding, snapshot validation, and
-data-to-domain mapping. The screen is still empty. Fetching content, offline
-storage, choice selection, and image loading will follow in small, focused changes.
+The form feature has domain models, JSON validation, API fetching, and relational
+offline storage. The screen is still empty; the next UI phase will connect the
+observe/refresh use cases. Choice persistence and image loading follow later.
 
 ## Startup
 
@@ -25,6 +25,7 @@ draws its own splash content.
 - `app`: application, splash launcher, MainActivity, and root navigation.
 - `base`: MVI contracts and `BaseCoroutineViewModel`.
 - `design`: shared Compose theme.
+- `networking`: shared OkHttp client, logging interceptor, and Retrofit instance.
 - `resources`: all Android resource files, including strings, icons, XML themes,
   and backup configuration.
 - `form`: form and image destinations, UI, ViewModels, and the feature's data and
@@ -50,9 +51,9 @@ Data mappers handle storage and API formats. Presentation mappers prepare domain
 data for the screen, including hierarchy depth and display state. This keeps
 DTOs, entities, and domain models out of screen state and composables.
 
-Mappers stay inside the feature and have no side effects. The data-to-domain
-mapper is implemented. Entity and presentation mappers will be added with Room
-and the hierarchy UI. Reverse mappings are added for actual write operations.
+Mappers stay inside the feature and have no side effects. DTO/domain and
+entity/domain mappers are implemented. Presentation mapping will be added with
+the hierarchy UI. Reverse mappings are added for actual write operations.
 
 ## Content contract
 
@@ -68,8 +69,41 @@ its ordered definition matches; conflicting definitions are rejected.
 
 Extra metadata fields are accepted. Unknown content types, missing required
 fields, invalid hierarchy, and duplicate IDs produce `InvalidFormContentException`
-in the data layer. A later repository will handle this failure while keeping the
-last valid content. Empty documents, pages, and sections are supported.
+in the data layer. The repository handles this failure while keeping the last
+valid content. Empty documents, pages, and sections are supported.
+
+## API and offline storage
+
+The `:networking` module provides singleton OkHttp and Retrofit instances through
+Hilt, following ASA. It owns the base URL, bounded connection/read/write/call
+timeouts, and the [HTTP logging interceptor](https://github.com/lysine-dev/okhttp/tree/main/okhttp-logging-interceptor).
+Body logging is enabled only in debug; release clients have no logging interceptor.
+The feature declares `FormApi` and creates it from the injected Retrofit instance.
+Form decoding, validation, and failure handling stay in `:form`.
+
+Retrofit fetches the challenge endpoint with OkHttp. The response body is closed
+after the existing parser decodes and validates it. Fetching, body reading, and
+mapping run outside the main thread.
+
+I use Room as the source of truth. The repository observes only saved snapshots;
+fetching alone does not publish content. Four tables store nodes with parent IDs
+and sibling positions, response sets, ordered response options, and the last
+successful refresh time. This is structured storage rather than a cached JSON blob.
+
+Room reads and replaces each snapshot in a transaction. A write failure rolls
+back both content and metadata. A failed fetch or invalid response never starts
+replacement. An empty fetched form has metadata; no saved form is represented
+by null. Cached read errors propagate rather than pretending the cache is empty.
+
+A mutex covers the complete fetch-and-save operation, so overlapping refreshes
+cannot commit out of order. Cancellation propagates, and expected fetch, content,
+and storage failures are exposed as domain results. ObserveFormUseCase and
+RefreshFormUseCase provide the boundary for the later MVI integration.
+
+The version 1 schema is exported under `form/schemas` and kept in Git. There is
+no destructive-migration fallback. Answers do not exist in this schema yet;
+refresh reconciliation will be added with selection persistence. Image URLs are
+stored now; downloaded image files belong to the image phase.
 
 ## MVI
 
@@ -91,7 +125,7 @@ for discrete UI actions rather than continuous input streams.
 The UI applies navigation commands to a saved Navigation 3 back stack. Serializable
 keys hold only navigation arguments, and each entry owns its ViewModel and saved
 Compose state. The image destination is wired, but its content will be added with
-the data layer; there is no sample image button in the form screen.
+the image phase; there is no sample image button in the form screen.
 
 ## Setup
 
@@ -103,8 +137,24 @@ the data layer; there is no sample image button in the form screen.
 
 ## Build
 
+App versions are set in root `version.properties` (`versionCode` and `versionName`).
+Shared SDK versions are set in `gradle.properties` (`android.minSdk`,
+`android.compileSdk`, and `android.targetSdk`). The root build script applies them
+to all Android modules, following ASA; targetSdk applies to the app.
+
 ```shell
 ./gradlew :app:assembleDebug :app:lintDebug
+```
+
+Release enables code and resource shrinking; debug explicitly disables both.
+
+Base URLs are configured in `gradle.properties` as `networking.baseUrl.debug` and
+`networking.baseUrl.release`. Both use the challenge host by default. The networking
+module generates `BuildConfig.BASE_URL` for the selected build type, which Retrofit
+reads at runtime. URLs must include a trailing `/`. To override a URL for one build:
+
+```shell
+./gradlew :app:assembleDebug -Pnetworking.baseUrl.debug=https://example.com/
 ```
 
 On Windows, use `gradlew.bat`. Run the `app` configuration on an emulator or device
@@ -113,11 +163,13 @@ with API 26 or newer.
 ## Tests
 
 ```shell
-./gradlew :base:testDebugUnitTest :form:testDebugUnitTest
+./gradlew :base:testDebugUnitTest :networking:testDebugUnitTest :networking:testReleaseUnitTest :form:testDebugUnitTest
 ```
 
-The JVM tests cover MVI behavior, destination-key serialization, JSON parsing,
-data mapping, and snapshot validation. The test fixture in
+The JVM tests cover MVI behavior, destination keys, parsing, entity/domain mapping,
+HTTP responses, cache-preserving failures, cancellation, and overlapping refreshes.
+Networking tests also check the shared transport and debug/release logging policy.
+HTTP tests use MockWebServer and do not depend on the public endpoint. The fixture in
 `form/src/test/resources/fixtures/lumiform-android-test.json` is a snapshot of the
 [challenge endpoint](https://gist.githubusercontent.com/aruana-lumiform/383e1291df3e0cc1d49aeb14d45f5b94/raw/lumiform-android-test.json).
 It is JVM test input only and is not packaged in the app's Android resources.
@@ -126,15 +178,20 @@ With an emulator or device connected:
 
 ```shell
 ./gradlew :app:connectedDebugAndroidTest
+./gradlew :form:connectedDebugAndroidTest
 ```
 
 The navigation device test checks that the image destination survives saved
 Compose state restoration and that Back returns to the form. It uses an empty
-Hilt Activity available only in debug builds. Full process-death and offline
-tests will follow when the data layer is implemented.
+Hilt Activity available only in debug builds. Full process-death and offline UI
+tests will follow with screen integration.
 
 The startup device test launches the app through its launcher intent and checks
 that MainActivity becomes the task root after the splash handoff.
+
+The form device tests use a real Room database to check reopen persistence,
+offline refresh failure, foreign-key rollback, empty-cache semantics, and complete
+observed snapshots. They create and remove a separate test database.
 
 ## AI development guidance
 

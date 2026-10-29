@@ -4,6 +4,7 @@ Read the relevant skills in [aidev](aidev/README.md) before changing that area.
 They are project-scoped guidance; the user's current instructions take priority.
 
 - Keep `presentation`, `domain`, `data`, and `di` inside each feature module.
+- Keep OkHttp, interceptors, base URL, and Retrofit provisioning in `:networking`. Features declare request APIs and create them from the injected Retrofit instance.
 - Keep all Android `res/` files in `:resources`, including strings, icons, XML themes, and configuration XML. Consumers import `com.lumiformtest.resources.R`; Compose theme code stays in `:design`.
 - Use explicit mappers at data/domain and domain/UI boundaries. Keep DTOs and entities out of domain and UI contracts, and domain models out of screen state.
 - Preserve the custom MVI with one action handler for state changes and side effects.
