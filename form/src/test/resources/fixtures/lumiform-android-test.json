@@ -1,0 +1,125 @@
+[
+  {
+    "id": 1,
+    "type": "page",
+    "title": "Main Page",
+    "items": [
+      {
+        "id": 2,
+        "type": "section",
+        "title": "Introduction",
+        "items": [
+          {
+            "id": 3,
+            "type": "text",
+            "content": "Welcome to the main page!"
+          },
+          {
+            "id": 4,
+            "type": "image",
+            "src": "https://raw.githubusercontent.com/github/explore/main/topics/android/android.png",
+            "title": "Welcome Image"
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "type": "section",
+        "title": "Chapter 1",
+        "items": [
+          {
+            "id": 6,
+            "type": "text",
+            "content": "This is the first chapter."
+          },
+          {
+            "id": 7,
+            "type": "section",
+            "title": "Subsection 1.1",
+            "items": [
+              {
+                "id": 8,
+                "type": "text",
+                "content": "This is a subsection under Chapter 1."
+              },
+              {
+                "id": 9,
+                "type": "image",
+                "src": "https://raw.githubusercontent.com/github/explore/main/topics/ios/ios.png",
+                "title": "Chapter 1 Image"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 10,
+    "type": "page",
+    "title": "Second Page",
+    "items": [
+      {
+        "id": 11,
+        "type": "section",
+        "title": "Chapter 2",
+        "items": [
+          {
+            "id": 12,
+            "type": "text",
+            "content": "This is the second chapter."
+          },
+          {
+            "id": 13,
+            "type": "choice",
+            "content": "What is the main topic of Chapter 2?",
+            "response_set": {
+              "id": 101,
+              "multiple_selection": false,
+              "responses": [
+                {
+                  "id": 1011,
+                  "label": "Safety procedures",
+                  "score": 1
+                },
+                {
+                  "id": 1012,
+                  "label": "Equipment checks",
+                  "score": 2
+                },
+                {
+                  "id": 1013,
+                  "label": "Not applicable",
+                  "score": null
+                }
+              ]
+            }
+          },
+          {
+            "id": 14,
+            "type": "choice",
+            "content": "Which areas were inspected?",
+            "response_set": {
+              "id": 102,
+              "multiple_selection": true,
+              "responses": [
+                {
+                  "id": 1021,
+                  "label": "Entrance"
+                },
+                {
+                  "id": 1022,
+                  "label": "Storage"
+                },
+                {
+                  "id": 1023,
+                  "label": "Loading bay"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+]
