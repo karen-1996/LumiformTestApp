@@ -3,6 +3,7 @@ package com.lumiformtest.form.di
 import android.content.Context
 import androidx.room.Room
 import com.lumiformtest.form.data.local.FormDatabase
+import com.lumiformtest.form.data.local.MIGRATION_1_2
 import com.lumiformtest.form.data.local.FormLocalDataSource
 import com.lumiformtest.form.data.local.RoomFormLocalDataSource
 import com.lumiformtest.form.data.remote.FormApi
@@ -37,7 +38,8 @@ internal object FormDataModule {
     @Provides
     @Singleton
     fun database(@ApplicationContext context: Context): FormDatabase =
-        Room.databaseBuilder(context, FormDatabase::class.java, "lumiform-form.db").build()
+        Room.databaseBuilder(context, FormDatabase::class.java, "lumiform-form.db")
+            .addMigrations(MIGRATION_1_2).build()
 
     @Provides
     fun dao(database: FormDatabase) = database.formDao()

@@ -17,6 +17,7 @@ description: Change feature ViewModels, MVI contracts, or the shared action-hand
 - Keep handlers focused. Extract helpers for real complexity rather than adding a class per action.
 - Start form observation and automatic refresh once per ViewModel instance. Coalesce refresh taps while work is active, and keep first-cache-read, refresh, and pending-Room-emission state separate.
 - A refresh completion must not invent content or hide a saved-content read error. Only a readable local snapshot clears that error; retry restarts a failed observer.
+- Keep choice writes in one lazy FIFO consumer. Checked state comes from Room, and save failures stay in presentation state until dismissed or resolved. Do not automatically replay toggles or let an older completion dismiss a newer error.
 - Map use-case results to presentation models before putting them in screen state. Follow the [layer-mapping skill](../layer-mapping/SKILL.md); composables should not receive domain models, DTOs, or entities.
 
 When changing the base, verify ordering, overlapping state updates, cancellation,

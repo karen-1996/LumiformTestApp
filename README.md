@@ -7,9 +7,10 @@ My implementation of the Lumiform Android coding challenge.
 The foundation includes feature modules, my custom MVI base, Hilt, and Navigation 3.
 The form feature has domain models, JSON validation, API fetching, and relational
 offline storage. The screen observes saved content, refreshes on first open, and
-renders pages, nested sections, text, choice labels, and image titles. It includes
-loading, empty, error/retry, refresh progress, and last-update states. Choice
-interaction/persistence and image loading follow in their own phases.
+renders pages, nested sections, text, choice controls, and image titles. Single
+and multiple answers are saved locally and preserved when refreshed definitions
+still support them. Loading, empty, error/retry, refresh progress, and last-update
+states are implemented. Image loading follows in its own phase.
 
 ## Startup
 
@@ -89,9 +90,9 @@ after the existing parser decodes and validates it. Fetching, body reading, and
 mapping run outside the main thread.
 
 I use Room as the source of truth. The repository observes only saved snapshots;
-fetching alone does not publish content. Four tables store nodes with parent IDs
-and sibling positions, response sets, ordered response options, and the last
-successful refresh time. This is structured storage rather than a cached JSON blob.
+fetching alone does not publish content. Five tables store nodes with parent IDs
+and sibling positions, response sets, ordered response options, selected answers,
+and the last successful refresh time. This is structured storage rather than a cached JSON blob.
 
 Room reads and replaces each snapshot in a transaction. A write failure rolls
 back both content and metadata. A failed fetch or invalid response never starts
@@ -105,10 +106,33 @@ RefreshFormUseCase provide the boundary for the MVI integration. Expected saved
 content read failures become a domain observation result; retry restarts a failed
 observer. The ViewModel does not import Room or data-layer exceptions.
 
-The version 1 schema is exported under `form/schemas` and kept in Git. There is
-no destructive-migration fallback. Answers do not exist in this schema yet;
-refresh reconciliation will be added with selection persistence. Image URLs are
-stored now; downloaded image files belong to the image phase.
+Schemas 1 and 2 are exported under `form/schemas` and kept in Git. The explicit
+1 -> 2 migration adds selections and their indexes without clearing the saved
+form. There is no destructive-migration fallback. Image URLs are stored now;
+downloaded image files belong to the image phase.
+
+## Choice persistence
+
+Radio questions replace their previous answer and keep an already-selected option
+selected. Checkbox questions toggle independently. The DAO reads the current
+saved definition and applies each operation in one transaction. Answers belong
+to a question and response set; shared definitions do not share selected answers.
+Composite foreign keys reject options from a different set. A stale or removed
+option returns a domain failure; saved answers stay unchanged.
+
+Refresh reads the latest selections inside its write transaction, then restores
+only valid answers after replacing definitions. This includes answers saved while
+the request was still fetching. A changed question type or response-set identity
+clears invalid answers; removed options are discarded. When multiple choice becomes
+single choice, the first surviving selected option in the new display order is
+kept. Any failed replacement rolls back content, answers, and refresh time together.
+Selection writes never change the successful remote refresh timestamp.
+
+Choices remain usable during network refresh or a failed request. They are disabled
+while a saved-content read failure prevents reliable observation. Checked state
+comes from Room, with no optimistic update. Write failures stay in screen state and show a
+message while the screen is resumed; retry is another explicit tap, not an automatic
+replay of a toggle.
 
 ## MVI
 
@@ -129,18 +153,21 @@ for discrete UI actions rather than continuous input streams.
 
 I prefer lazy initialization where creation can safely wait until first use,
 following ASA. The MVI state/channels, parser configuration, refresh mutex, fallback
-theme palettes, and preview data use lazy properties. Conditional injected
+theme palettes, selection queue/writer, and preview data use lazy properties. Conditional injected
 dependencies use Dagger Lazy; release builds do not create the unused logger.
 Compose values keep their lifecycle-aware remember behavior, and cleanup does not
 initialize unused resources.
 
 The form ViewModel observes Room and starts one refresh per ViewModel instance.
-Repeated refresh taps are coalesced while work is active. Cache reads and refresh
+Repeated refresh taps are coalesced while work is active. Choice taps use one
+FIFO writer so suspended writes cannot reorder accepted input. Cache reads and refresh
 have separate state: a fast fetch failure cannot hide a pending cache read, and
 refresh success waits for Room rather than publishing response content directly.
 Saved content and its timestamp remain visible on refresh failure. Messages do not
 infer connectivity from request failures. The list uses stable IDs and saved scroll
-state; indentation and section typography have readable lower bounds.
+state; indentation and section typography have readable lower bounds. Pure
+presentation mapping reuses flattened rows when only selections change, replacing
+only affected choice rows.
 
 The UI applies navigation commands to a saved Navigation 3 back stack. Serializable
 keys hold only navigation arguments, and each entry owns its ViewModel and saved
@@ -188,7 +215,8 @@ with API 26 or newer.
 
 The JVM tests cover MVI behavior, destination keys, parsing, entity/domain mapping,
 HTTP responses, cache-preserving failures, cancellation, overlapping refreshes,
-domain/UI hierarchy mapping, and MVI cache/refresh timing and recovery.
+domain/UI hierarchy and selection mapping, refresh reconciliation, and MVI
+cache/refresh timing, ordered writes, cancellation, and error recovery.
 Networking tests also check the shared transport and debug/release logging policy.
 HTTP tests use MockWebServer and do not depend on the public endpoint. The fixture in
 `form/src/test/resources/fixtures/lumiform-android-test.json` is a snapshot of the
@@ -212,17 +240,24 @@ that MainActivity becomes the task root after the splash handoff.
 
 Stateless form screen tests cover row kinds/headings, retry actions, cached content
 during refresh/failure, empty versus loading, saved list position, and long nested
-text at a large font scale in both themes on a small layout width.
+text at a large font scale in both themes on a small layout width. Choice tests
+check radio/checkbox semantics, one action per whole-row tap, failure messages,
+control availability, and long labels with large fonts.
 
 The form device tests use a real Room database to check reopen persistence,
 offline refresh failure, foreign-key rollback, empty-cache semantics, and complete
-observed snapshots. They create and remove a separate test database.
+observed snapshots. Selection tests cover foreign keys, shared definitions,
+concurrent taps, mode/identity changes, rollback, answers saved during fetch, and
+coherent observed definitions/answers. A migration test starts from the exported
+v1 schema, preserves its content/time, and saves/reopens answers in v2. These
+tests create and remove separate test databases.
 
 The real app was also checked manually after a successful fetch: with the test
 emulator's network disabled and no active network, a force-stop/relaunch displayed
-saved content, retained the successful update time, and offered retry after the
-refresh failed. This verifies offline form content, not downloaded images or
-persisted selections, which are later phases.
+saved content and selected answers, retained the successful update time, and
+offered retry after refresh failed. Another checkbox answer was saved offline.
+After reconnecting, a successful refresh retained all answers and updated the
+refresh time. Downloaded images are still part of the image phase.
 
 ## AI development guidance
 

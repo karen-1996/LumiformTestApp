@@ -16,6 +16,8 @@ Follow the implemented API/storage boundaries. Add selection and image behavior 
 - Translate expected saved-content read failures to the domain observation result. Keep Room/data exception types out of presentation; let cancellation and unrelated failures propagate. Retry recreates a failed local observation.
 - Distinguish no saved snapshot from a successfully fetched empty document through refresh metadata. Keep snapshot reads and writes transactional and retain the exported Room schemas.
 - Separate response definitions from selected answers. Preserve valid selections on refresh and remove only selections invalidated by the new definitions.
+- Capture current answers inside the refresh write transaction, after fetching. Qualify answers by question, response-set, and option IDs; when multiple becomes single, keep the first surviving selected option in the refreshed display order.
+- Selection writes use their own short Room transactions, not the mutex spanning a network refresh. Keep refresh timestamps unchanged by answer writes, and migrate schema 1 -> 2 without clearing existing content.
 - Enforce single-choice replacement and multi-choice toggles transactionally, using the saved question definition.
 - Serialize or coalesce overlapping refreshes so older requests cannot overwrite newer data.
 - Saving image URLs is not saving images. Define retention for downloaded originals and test thumbnails and the viewer offline after restart.

@@ -2,9 +2,13 @@ package com.lumiformtest.form.data.local
 
 import android.database.SQLException
 import com.lumiformtest.form.data.mapper.FormEntityMapper
+import com.lumiformtest.form.data.mapper.ChoiceSelectionMapper
 import com.lumiformtest.form.di.FormIoDispatcher
 import com.lumiformtest.form.domain.model.FormDocument
 import com.lumiformtest.form.domain.model.FormSnapshot
+import com.lumiformtest.form.domain.model.ChoiceOption
+import com.lumiformtest.form.domain.model.ChoiceSelectionResult
+import com.lumiformtest.form.domain.model.ChoiceSelectionFailure
 import java.time.Instant
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
@@ -18,6 +22,7 @@ import kotlinx.coroutines.withContext
 internal interface FormLocalDataSource {
     fun observeForm(): Flow<FormSnapshot?>
     suspend fun replaceForm(document: FormDocument, lastUpdated: Instant)
+    suspend fun toggleChoiceOption(option: ChoiceOption): ChoiceSelectionResult
 }
 
 internal class RoomFormLocalDataSource @Inject constructor(
@@ -25,6 +30,7 @@ internal class RoomFormLocalDataSource @Inject constructor(
     private val mapper: FormEntityMapper,
     @FormIoDispatcher private val dispatcher: CoroutineDispatcher
 ) : FormLocalDataSource {
+    private val selectionMapper by lazy { ChoiceSelectionMapper() }
     override fun observeForm(): Flow<FormSnapshot?> = dao.observeForm()
         .map { stored -> stored?.let(mapper::toDomain) }
         .catch { error ->
@@ -40,6 +46,15 @@ internal class RoomFormLocalDataSource @Inject constructor(
             dao.replaceForm(stored)
         } catch (error: SQLException) {
             throw FormStorageException("Cannot save the form", error)
+        }
+    }
+
+    override suspend fun toggleChoiceOption(option: ChoiceOption): ChoiceSelectionResult = withContext(dispatcher) {
+        try {
+            if (dao.toggleChoiceOption(selectionMapper.toEntity(option))) ChoiceSelectionResult.Success
+            else ChoiceSelectionResult.Failure(ChoiceSelectionFailure.UNAVAILABLE)
+        } catch (error: SQLException) {
+            throw FormStorageException("Cannot save the answer", error)
         }
     }
 }

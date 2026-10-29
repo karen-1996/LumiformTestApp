@@ -15,10 +15,11 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.lumiformtest.form.presentation.model.FormRowUiModel
+import com.lumiformtest.form.presentation.model.ChoiceOptionUiInput
 import com.lumiformtest.resources.R
 
 @Composable
-internal fun FormRow(row: FormRowUiModel) {
+internal fun FormRow(row: FormRowUiModel, choicesEnabled: Boolean, onChoiceClick: (ChoiceOptionUiInput) -> Unit) {
     // Deep sections should still leave enough room for text on a small screen.
     val indentation = (row.depth - 1).coerceIn(0, 4) * 12
     Column(
@@ -46,20 +47,7 @@ internal fun FormRow(row: FormRowUiModel) {
                     )
                 }
             }
-            is FormRowUiModel.Choice -> {
-                Text(row.text, style = MaterialTheme.typography.bodyMedium)
-                Text(
-                    stringResource(
-                        if (row.responseSet.allowsMultipleSelection) R.string.form_multiple_choice
-                        else R.string.form_single_choice
-                    ),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                row.responseSet.options.forEach { option ->
-                    Text(stringResource(R.string.form_response_option, option.label), style = MaterialTheme.typography.bodyMedium)
-                }
-            }
+            is FormRowUiModel.Choice -> ChoiceQuestion(row, choicesEnabled, onChoiceClick)
         }
     }
 }

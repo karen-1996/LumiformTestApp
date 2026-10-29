@@ -3,6 +3,8 @@ package com.lumiformtest.form.presentation.screens
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.lumiformtest.design.theme.LumiformTestAppTheme
+import com.lumiformtest.form.presentation.model.ChoiceWriteFailureUi
+import com.lumiformtest.form.presentation.model.ChoiceWriteFailureReasonUi
 import com.lumiformtest.form.presentation.model.FormContentUiModel
 import com.lumiformtest.form.presentation.model.FormRefreshFailureUi
 import com.lumiformtest.form.presentation.model.FormRowUiModel
@@ -49,6 +51,29 @@ private fun ErrorPreview() = PreviewForm(FormUiState(isReadingCache = false, ref
 @Composable
 private fun CachedFailurePreview() = PreviewForm(FormUiState(
     content = PreviewContent, isReadingCache = false, refreshFailure = FormRefreshFailureUi.FETCH
+))
+
+@Preview(showBackground = true)
+@Composable
+private fun SingleAnswerPreview() = PreviewForm(FormUiState(
+    content = PreviewContent.copy(rows = PreviewContent.rows.map {
+        if (it is FormRowUiModel.Choice) it.copy(responseSet = it.responseSet.copy(allowsMultipleSelection = false), selectedOptionIds = setOf(1)) else it
+    }), isReadingCache = false
+))
+
+@Preview(showBackground = true)
+@Composable
+private fun MultipleAnswersPreview() = PreviewForm(FormUiState(
+    content = PreviewContent.copy(rows = PreviewContent.rows.map {
+        if (it is FormRowUiModel.Choice) it.copy(selectedOptionIds = setOf(1, 2)) else it
+    }), isReadingCache = false
+))
+
+@Preview(showBackground = true)
+@Composable
+private fun SaveFailurePreview() = PreviewForm(FormUiState(
+    content = PreviewContent, isReadingCache = false,
+    choiceWriteFailure = ChoiceWriteFailureUi(1, 6, ChoiceWriteFailureReasonUi.STORAGE)
 ))
 
 @Preview(showBackground = true, widthDp = 320, fontScale = 2f)

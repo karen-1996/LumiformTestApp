@@ -1,6 +1,13 @@
 package com.lumiformtest.form.presentation.viewmodel
 
 import androidx.lifecycle.ViewModelStore
+import com.lumiformtest.form.domain.model.ChoiceSelection
+import com.lumiformtest.form.domain.model.ChoiceSelectionFailure
+import com.lumiformtest.form.domain.model.FormItem
+import com.lumiformtest.form.domain.model.ResponseSet
+import com.lumiformtest.form.domain.model.ResponseOption
+import com.lumiformtest.form.domain.model.ChoiceOption
+import com.lumiformtest.form.domain.model.ChoiceSelectionResult
 import com.lumiformtest.form.domain.model.FormDocument
 import com.lumiformtest.form.domain.model.FormObservation
 import com.lumiformtest.form.domain.model.FormPage
@@ -10,7 +17,10 @@ import com.lumiformtest.form.domain.model.RefreshFormResult
 import com.lumiformtest.form.domain.repository.FormRepository
 import com.lumiformtest.form.domain.usecase.ObserveFormUseCase
 import com.lumiformtest.form.domain.usecase.RefreshFormUseCase
+import com.lumiformtest.form.domain.usecase.ToggleChoiceOptionUseCase
 import com.lumiformtest.form.presentation.mapper.FormUiMapper
+import com.lumiformtest.form.presentation.model.ChoiceOptionUiInput
+import com.lumiformtest.form.presentation.model.ChoiceWriteFailureReasonUi
 import com.lumiformtest.form.presentation.model.FormRefreshFailureUi
 import com.lumiformtest.form.presentation.model.FormRowUiModel
 import java.time.Instant
@@ -34,6 +44,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertSame
 import org.junit.Before
 import org.junit.Test
 
@@ -263,8 +274,134 @@ class FormViewModelTest {
         assertEquals(0, repository.activeObservers)
     }
 
+    @Test
+    fun `choice writes keep tap order while refresh and the first write are suspended`() = runTest(dispatcher) {
+        val finish = CompletableDeferred<Unit>()
+        val repository = FakeRepository(FormObservation.Snapshot(choiceSnapshot())).apply {
+            toggle = { if (toggles.size == 1) finish.await(); ChoiceSelectionResult.Success }
+        }
+        val viewModel = create(repository)
+        val inputs = listOf(ChoiceOptionUiInput(10, 100, 1), ChoiceOptionUiInput(10, 100, 2), ChoiceOptionUiInput(11, 100, 1))
+        inputs.forEach { viewModel.sendAction(FormAction.OptionClicked(it)) }
+        runCurrent()
+        assertEquals(listOf(ChoiceOption(10, 100, 1)), repository.toggles)
+        assertTrue(viewModel.viewState.value.isRefreshing)
+        finish.complete(Unit)
+        runCurrent()
+        assertEquals(inputs.map { ChoiceOption(it.questionId, it.responseSetId, it.optionId) }, repository.toggles)
+    }
+
+    @Test
+    fun `checked state waits for Room and selection projection reuses unaffected rows`() = runTest(dispatcher) {
+        val repository = FakeRepository(FormObservation.Snapshot(choiceSnapshot()))
+        val viewModel = create(repository)
+        runCurrent()
+        val oldRows = requireNotNull(viewModel.viewState.value.content).rows
+        viewModel.sendAction(FormAction.OptionClicked(ChoiceOptionUiInput(10, 100, 1)))
+        runCurrent()
+        assertTrue(viewModel.selected(10).isEmpty())
+        repository.observations.emit(FormObservation.Snapshot(choiceSnapshot(setOf(1))))
+        runCurrent()
+        val newRows = requireNotNull(viewModel.viewState.value.content).rows
+        assertEquals(setOf(1L), viewModel.selected(10))
+        assertTrue((oldRows.first { it.id == 10L } as FormRowUiModel.Choice).selectedOptionIds.isEmpty())
+        assertSame(oldRows.first { it.id == 2L }, newRows.first { it.id == 2L })
+        assertSame(oldRows.first { it.id == 11L }, newRows.first { it.id == 11L })
+    }
+
+    @Test
+    fun `old dismissals and successes from another question do not clear the latest save error`() = runTest(dispatcher) {
+        val repository = FakeRepository(FormObservation.Snapshot(choiceSnapshot())).apply {
+            toggle = { ChoiceSelectionResult.Failure(ChoiceSelectionFailure.STORAGE) }
+        }
+        val viewModel = create(repository)
+        viewModel.sendAction(FormAction.OptionClicked(ChoiceOptionUiInput(10, 100, 1)))
+        runCurrent()
+        val first = requireNotNull(viewModel.viewState.value.choiceWriteFailure)
+        viewModel.sendAction(FormAction.OptionClicked(ChoiceOptionUiInput(11, 100, 1)))
+        runCurrent()
+        val latest = requireNotNull(viewModel.viewState.value.choiceWriteFailure)
+        viewModel.sendAction(FormAction.DismissChoiceFailure(first.id))
+        repository.toggle = { ChoiceSelectionResult.Success }
+        viewModel.sendAction(FormAction.OptionClicked(ChoiceOptionUiInput(10, 100, 1)))
+        runCurrent()
+        assertEquals(latest, viewModel.viewState.value.choiceWriteFailure)
+        viewModel.sendAction(FormAction.OptionClicked(ChoiceOptionUiInput(11, 100, 1)))
+        runCurrent()
+        assertNull(viewModel.viewState.value.choiceWriteFailure)
+    }
+
+    @Test
+    fun `an older write result cannot replace or clear a newer read failure`() = runTest(dispatcher) {
+        for (result in listOf(ChoiceSelectionResult.Success, ChoiceSelectionResult.Failure(ChoiceSelectionFailure.STORAGE))) {
+            val finish = CompletableDeferred<ChoiceSelectionResult>()
+            val repository = FakeRepository(FormObservation.Snapshot(choiceSnapshot())).apply { toggle = { finish.await() } }
+            val viewModel = create(repository)
+            viewModel.sendAction(FormAction.OptionClicked(ChoiceOptionUiInput(10, 100, 1)))
+            runCurrent()
+            repository.observations.emit(FormObservation.ReadFailure)
+            runCurrent()
+            viewModel.sendAction(FormAction.OptionClicked(ChoiceOptionUiInput(10, 100, 2)))
+            runCurrent()
+            val failure = requireNotNull(viewModel.viewState.value.choiceWriteFailure)
+            assertEquals(ChoiceWriteFailureReasonUi.READ_UNAVAILABLE, failure.reason)
+            finish.complete(result)
+            runCurrent()
+            assertEquals(failure, viewModel.viewState.value.choiceWriteFailure)
+            assertEquals(1, repository.toggles.size)
+        }
+    }
+
+    @Test
+    fun `clearing cancels the choice writer and leaves queued taps uncommitted`() = runTest(dispatcher) {
+        var cancelled = false
+        val repository = FakeRepository(FormObservation.Snapshot(choiceSnapshot())).apply {
+            toggle = { try { awaitCancellation() } finally { cancelled = true } }
+        }
+        val viewModel = create(repository)
+        repeat(3) { viewModel.sendAction(FormAction.OptionClicked(ChoiceOptionUiInput(10, 100, 1))) }
+        runCurrent()
+        store.clear()
+        runCurrent()
+        assertTrue(cancelled)
+        assertEquals(1, repository.toggles.size)
+        assertTrue(viewModel.selected(10).isEmpty())
+    }
+
+    @Test
+    fun `stale option identity is forwarded and its failure survives snapshot emissions`() = runTest(dispatcher) {
+        val repository = FakeRepository(FormObservation.Snapshot(choiceSnapshot())).apply {
+            toggle = { ChoiceSelectionResult.Failure(ChoiceSelectionFailure.UNAVAILABLE) }
+        }
+        val viewModel = create(repository)
+        viewModel.sendAction(FormAction.OptionClicked(ChoiceOptionUiInput(10, 999, 1)))
+        runCurrent()
+        assertEquals(listOf(ChoiceOption(10, 999, 1)), repository.toggles)
+        val failure = requireNotNull(viewModel.viewState.value.choiceWriteFailure)
+        assertEquals(ChoiceWriteFailureReasonUi.UNAVAILABLE, failure.reason)
+        repository.observations.emit(FormObservation.Snapshot(choiceSnapshot(setOf(2))))
+        runCurrent()
+        assertEquals(failure, viewModel.viewState.value.choiceWriteFailure)
+        viewModel.sendAction(FormAction.DismissChoiceFailure(failure.id))
+        runCurrent()
+        assertNull(viewModel.viewState.value.choiceWriteFailure)
+    }
+
+    private fun choiceSnapshot(selected: Set<Long> = emptySet()): FormSnapshot {
+        val set = ResponseSet(100, true, listOf(ResponseOption(1, "One", null), ResponseOption(2, "Two", null)))
+        return saved.copy(
+            document = FormDocument(listOf(FormPage(1, "Page", listOf(
+                FormItem.Text(2, "Text"), FormItem.Choice(10, "First", set), FormItem.Choice(11, "Shared", set)
+            )))),
+            selections = if (selected.isEmpty()) emptyMap() else mapOf(10L to ChoiceSelection(100, selected))
+        )
+    }
+
+    private fun FormViewModel.selected(id: Long) =
+        (requireNotNull(viewState.value.content).rows.first { it.id == id } as FormRowUiModel.Choice).selectedOptionIds
+
     private fun create(repository: FakeRepository) = FormViewModel(
-        ObserveFormUseCase(repository), RefreshFormUseCase(repository), FormUiMapper(), dispatcher
+        ObserveFormUseCase(repository), RefreshFormUseCase(repository), ToggleChoiceOptionUseCase(repository), FormUiMapper(), dispatcher
     ).also { store.put("form-${nextKey++}", it) }
 
     private fun FormViewModel.title() = (viewState.value.content?.rows?.first() as? FormRowUiModel.Page)?.title
@@ -279,6 +416,13 @@ class FormViewModelTest {
         var activeObservers = 0
         var refreshCalls = 0
         var refresh: suspend () -> RefreshFormResult = { awaitCancellation() }
+        val toggles by lazy { mutableListOf<ChoiceOption>() }
+        var toggle: suspend (ChoiceOption) -> ChoiceSelectionResult = { ChoiceSelectionResult.Success }
+
+        override suspend fun toggleChoiceOption(option: ChoiceOption): ChoiceSelectionResult {
+            toggles += option
+            return toggle(option)
+        }
 
         override fun observeForm() = flow {
             observeCalls++

@@ -5,6 +5,9 @@ import com.lumiformtest.form.data.local.FormStorageException
 import com.lumiformtest.form.data.remote.FormRemoteDataSource
 import com.lumiformtest.form.data.remote.InvalidFormContentException
 import com.lumiformtest.form.domain.model.FormObservation
+import com.lumiformtest.form.domain.model.ChoiceOption
+import com.lumiformtest.form.domain.model.ChoiceSelectionResult
+import com.lumiformtest.form.domain.model.ChoiceSelectionFailure
 import com.lumiformtest.form.domain.model.FormDocument
 import com.lumiformtest.form.domain.model.FormPage
 import com.lumiformtest.form.domain.model.FormRefreshFailure
@@ -180,6 +183,7 @@ class OfflineFormRepositoryTest {
         val local = object : FormLocalDataSource {
             override fun observeForm() = flow<FormSnapshot?> { throw FormStorageException("Cannot read") }
             override suspend fun replaceForm(document: FormDocument, lastUpdated: Instant) = Unit
+            override suspend fun toggleChoiceOption(option: ChoiceOption) = ChoiceSelectionResult.Success
         }
         val repository = OfflineFormRepository(FormRemoteDataSource { document("New") }, local, clock)
 
@@ -192,10 +196,36 @@ class OfflineFormRepositoryTest {
             val local = object : FormLocalDataSource {
                 override fun observeForm() = flow<FormSnapshot?> { throw error }
                 override suspend fun replaceForm(document: FormDocument, lastUpdated: Instant) = Unit
+            override suspend fun toggleChoiceOption(option: ChoiceOption) = ChoiceSelectionResult.Success
             }
             val repository = OfflineFormRepository(FormRemoteDataSource { document("New") }, local, clock)
 
             val thrown = assertThrows(error.javaClass) { runTest { repository.observeForm().first() } }
+            assertEquals(error, thrown)
+        }
+    }
+
+    @Test
+    fun `selection writes stay local and preserve qualified option identity`() = runTest {
+        val input = ChoiceOption(10, 100, 2)
+        val local = FakeLocal(saved).apply { toggle = { assertEquals(input, it); ChoiceSelectionResult.Success } }
+        val repository = OfflineFormRepository(FormRemoteDataSource { error("Selection must not fetch") }, local, clock)
+        assertEquals(ChoiceSelectionResult.Success, repository.toggleChoiceOption(input))
+        local.toggle = { ChoiceSelectionResult.Failure(ChoiceSelectionFailure.UNAVAILABLE) }
+        assertEquals(ChoiceSelectionResult.Failure(ChoiceSelectionFailure.UNAVAILABLE), repository.toggleChoiceOption(input))
+    }
+
+    @Test
+    fun `selection storage errors are typed while cancellation and programming errors propagate`() {
+        val local = FakeLocal(saved)
+        val repository = OfflineFormRepository(FormRemoteDataSource { document("New") }, local, clock)
+        local.toggle = { throw FormStorageException("Cannot save") }
+        runTest {
+            assertEquals(ChoiceSelectionResult.Failure(ChoiceSelectionFailure.STORAGE), repository.toggleChoiceOption(ChoiceOption(10, 100, 1)))
+        }
+        for (error in listOf(CancellationException("Stopped"), IllegalStateException("Bug"))) {
+            local.toggle = { throw error }
+            val thrown = assertThrows(error.javaClass) { runTest { repository.toggleChoiceOption(ChoiceOption(10, 100, 1)) } }
             assertEquals(error, thrown)
         }
     }
@@ -206,6 +236,8 @@ class OfflineFormRepositoryTest {
         val state by lazy { MutableStateFlow(initial) }
         var writes = 0
         var beforeWrite: suspend () -> Unit = {}
+        var toggle: suspend (ChoiceOption) -> ChoiceSelectionResult = { ChoiceSelectionResult.Success }
+        override suspend fun toggleChoiceOption(option: ChoiceOption) = toggle(option)
 
         override fun observeForm() = state
 

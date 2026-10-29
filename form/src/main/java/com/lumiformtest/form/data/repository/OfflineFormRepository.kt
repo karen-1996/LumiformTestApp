@@ -7,6 +7,9 @@ import com.lumiformtest.form.data.remote.InvalidFormContentException
 import com.lumiformtest.form.domain.model.FormRefreshFailure
 import com.lumiformtest.form.domain.model.FormObservation
 import com.lumiformtest.form.domain.model.FormSnapshot
+import com.lumiformtest.form.domain.model.ChoiceOption
+import com.lumiformtest.form.domain.model.ChoiceSelectionResult
+import com.lumiformtest.form.domain.model.ChoiceSelectionFailure
 import com.lumiformtest.form.domain.model.RefreshFormResult
 import com.lumiformtest.form.domain.repository.FormRepository
 import java.io.IOException
@@ -25,6 +28,12 @@ internal class OfflineFormRepository @Inject constructor(
     private val clock: Clock
 ) : FormRepository {
     private val refreshMutex by lazy { Mutex() }
+
+    override suspend fun toggleChoiceOption(option: ChoiceOption): ChoiceSelectionResult = try {
+        local.toggleChoiceOption(option)
+    } catch (_: FormStorageException) {
+        ChoiceSelectionResult.Failure(ChoiceSelectionFailure.STORAGE)
+    }
 
     override fun observeForm() = local.observeForm()
         .map<FormSnapshot?, FormObservation> { FormObservation.Snapshot(it) }

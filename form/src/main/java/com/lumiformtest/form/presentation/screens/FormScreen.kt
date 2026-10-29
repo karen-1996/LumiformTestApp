@@ -16,7 +16,17 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -27,6 +37,7 @@ import com.lumiformtest.form.presentation.components.FormStatus
 import com.lumiformtest.form.presentation.components.formFailureMessage
 import com.lumiformtest.form.presentation.viewmodel.FormAction
 import com.lumiformtest.form.presentation.viewmodel.FormUiState
+import com.lumiformtest.form.presentation.model.ChoiceWriteFailureReasonUi
 import com.lumiformtest.resources.R
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -38,8 +49,28 @@ internal fun FormScreen(
 ) {
     val listState = rememberLazyListState()
     val hasFailure = state.hasReadFailure || state.refreshFailure != null
+    val snackbarHost = remember { SnackbarHostState() }
+    val latestAction by rememberUpdatedState(onAction)
+    val choiceFailure = state.choiceWriteFailure
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val choiceMessage = choiceFailure?.let {
+        stringResource(when (it.reason) {
+            ChoiceWriteFailureReasonUi.STORAGE -> R.string.choice_save_error
+            ChoiceWriteFailureReasonUi.UNAVAILABLE -> R.string.choice_unavailable
+            ChoiceWriteFailureReasonUi.READ_UNAVAILABLE -> R.string.choice_read_unavailable
+        })
+    }
+    LaunchedEffect(choiceFailure?.id, choiceMessage, lifecycleOwner) {
+        if (choiceFailure != null && choiceMessage != null) {
+            lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                snackbarHost.showSnackbar(choiceMessage, withDismissAction = true, duration = SnackbarDuration.Long)
+                latestAction(FormAction.DismissChoiceFailure(choiceFailure.id))
+            }
+        }
+    }
     Scaffold(
         modifier = modifier,
+        snackbarHost = { SnackbarHost(snackbarHost) },
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.form_title)) },
@@ -74,7 +105,9 @@ internal fun FormScreen(
                             Text(stringResource(R.string.form_empty), style = MaterialTheme.typography.bodyLarge)
                         }
                     }
-                    items(state.content.rows, key = { it.id }, contentType = { it::class }) { FormRow(it) }
+                    items(state.content.rows, key = { it.id }, contentType = { it::class }) { row ->
+                        FormRow(row, choicesEnabled = !state.hasReadFailure) { onAction(FormAction.OptionClicked(it)) }
+                    }
                 }
                 else -> item(key = "error") {
                     Text(formFailureMessage(state), style = MaterialTheme.typography.bodyLarge)

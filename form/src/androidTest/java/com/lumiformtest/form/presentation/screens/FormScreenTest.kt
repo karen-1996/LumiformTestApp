@@ -12,6 +12,12 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
@@ -26,6 +32,9 @@ import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.lumiformtest.design.theme.LumiformTestAppTheme
 import com.lumiformtest.form.FormScreenTestActivity
+import com.lumiformtest.form.presentation.model.ChoiceOptionUiInput
+import com.lumiformtest.form.presentation.model.ChoiceWriteFailureUi
+import com.lumiformtest.form.presentation.model.ChoiceWriteFailureReasonUi
 import com.lumiformtest.form.presentation.model.FormContentUiModel
 import com.lumiformtest.form.presentation.model.FormRefreshFailureUi
 import com.lumiformtest.form.presentation.model.FormRowUiModel
@@ -77,7 +86,7 @@ class FormScreenTest {
         compose.onNodeWithText("Image title").assertIsDisplayed()
         compose.onNodeWithTag("form_list").performScrollToKey(6L)
         compose.onNodeWithText("Choose an area").assertIsDisplayed()
-        compose.onNodeWithText(compose.activity.getString(R.string.form_response_option, "Entrance")).assertIsDisplayed()
+        compose.onNodeWithText("Entrance").assertIsDisplayed()
     }
 
     @Test
@@ -157,4 +166,111 @@ class FormScreenTest {
             compose.runOnIdle { dark = true }
         }
     }
+    @Test
+    fun radioRowsDispatchOnceAndRenderOnlyTheObservedSingleAnswer() {
+        var state by mutableStateOf(FormUiState(content = choiceContent, isReadingCache = false, isRefreshing = true))
+        val actions = mutableListOf<FormAction>()
+        compose.setContent { LumiformTestAppTheme { FormScreen(state, { actions += it }) } }
+        compose.onNodeWithText("First option").performClick()
+        compose.runOnIdle {
+            assertEquals(listOf(FormAction.OptionClicked(ChoiceOptionUiInput(2, 101, 1))), actions)
+            state = state.copy(content = selected(choiceContent, 2, setOf(1)))
+        }
+        compose.onNodeWithText("First option").assertIsSelected()
+        compose.onNodeWithText("Second option").assertIsNotSelected().performClick()
+        compose.runOnIdle { state = state.copy(content = selected(choiceContent, 2, setOf(2))) }
+        compose.onNodeWithText("First option").assertIsNotSelected()
+        compose.onNodeWithText("Second option").assertIsSelected().performClick()
+        compose.runOnIdle { assertEquals(3, actions.filterIsInstance<FormAction.OptionClicked>().size) }
+        compose.onNodeWithText("Second option").assertIsSelected()
+    }
+
+    @Test
+    fun checkboxRowsDispatchOnceAndKeepIndependentObservedSelections() {
+        var state by mutableStateOf(FormUiState(content = choiceContent, isReadingCache = false))
+        val actions = mutableListOf<FormAction>()
+        compose.setContent { LumiformTestAppTheme { FormScreen(state, { actions += it }) } }
+        compose.onNodeWithText("First area").assertIsOff().performClick()
+        compose.runOnIdle { state = state.copy(content = selected(choiceContent, 3, setOf(1))) }
+        compose.onNodeWithText("First area").assertIsOn()
+        compose.onNodeWithText("Second area").assertIsOff().performClick()
+        compose.runOnIdle { state = state.copy(content = selected(choiceContent, 3, setOf(1, 2))) }
+        compose.onNodeWithText("First area").assertIsOn().performClick()
+        compose.runOnIdle { state = state.copy(content = selected(choiceContent, 3, setOf(2))) }
+        compose.onNodeWithText("First area").assertIsOff()
+        compose.onNodeWithText("Second area").assertIsOn()
+        compose.runOnIdle {
+            assertEquals(listOf(
+                ChoiceOptionUiInput(3, 102, 1), ChoiceOptionUiInput(3, 102, 2), ChoiceOptionUiInput(3, 102, 1)
+            ), actions.filterIsInstance<FormAction.OptionClicked>().map { it.option })
+        }
+    }
+
+    @Test
+    fun choicesStayEnabledAfterRefreshFailureButDisableOnSavedReadFailure() {
+        var state by mutableStateOf(FormUiState(content = choiceContent, isReadingCache = false, refreshFailure = FormRefreshFailureUi.FETCH))
+        compose.setContent { LumiformTestAppTheme { FormScreen(state, {}) } }
+        compose.onNodeWithText("First option").assertIsEnabled()
+        compose.onNodeWithText("First area").assertIsEnabled()
+        compose.runOnIdle { state = state.copy(hasReadFailure = true) }
+        compose.onNodeWithText("First option").assertIsNotEnabled()
+        compose.onNodeWithText("First area").assertIsNotEnabled()
+    }
+
+    @Test
+    fun saveFailureIsVisibleWithoutReplacingTheForm() {
+        compose.setContent {
+            LumiformTestAppTheme { FormScreen(FormUiState(
+                content = choiceContent, isReadingCache = false,
+                choiceWriteFailure = ChoiceWriteFailureUi(1, 2, ChoiceWriteFailureReasonUi.STORAGE)
+            ), {}) }
+        }
+        compose.onNodeWithText(compose.activity.getString(R.string.choice_save_error)).assertIsDisplayed()
+        compose.onNodeWithText("Single question").assertIsDisplayed()
+        compose.onNodeWithText("First option").assertIsEnabled()
+    }
+
+    @Test
+    fun longChoiceLabelsWrapWithLargeFontsInBothThemes() {
+        var dark by mutableStateOf(false)
+        val text = "An entrance area with a long description that should wrap on narrow screens."
+        compose.setContent {
+            val density = LocalDensity.current.density
+            CompositionLocalProvider(LocalDensity provides Density(density, fontScale = 2f)) {
+                LumiformTestAppTheme(darkTheme = dark, dynamicColor = false) {
+                    Box(Modifier.width(320.dp)) {
+                        FormScreen(FormUiState(
+                            content = content.copy(rows = listOf(FormRowUiModel.Choice(
+                                2, 1, 50, "Question", ResponseSetUiModel(101, false, listOf(ResponseOptionUiModel(1, text, null))), setOf(1)
+                            ))), isReadingCache = false
+                        ), {})
+                    }
+                }
+            }
+        }
+        repeat(2) {
+            val layouts = mutableListOf<TextLayoutResult>()
+            compose.onNodeWithText(text, useUnmergedTree = true).performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
+            assertTrue(layouts.single().lineCount > 1)
+            assertFalse(layouts.single().hasVisualOverflow)
+            compose.runOnIdle { dark = true }
+        }
+    }
+
+    private val choiceContent by lazy {
+        content.copy(rows = listOf(
+            FormRowUiModel.Page(1, "Main page"),
+            FormRowUiModel.Choice(2, 1, 1, "Single question", ResponseSetUiModel(101, false, listOf(
+                ResponseOptionUiModel(1, "First option", null), ResponseOptionUiModel(2, "Second option", null)
+            ))),
+            FormRowUiModel.Choice(3, 1, 1, "Multiple question", ResponseSetUiModel(102, true, listOf(
+                ResponseOptionUiModel(1, "First area", null), ResponseOptionUiModel(2, "Second area", null)
+            )))
+        ))
+    }
+
+    private fun selected(content: FormContentUiModel, questionId: Long, selected: Set<Long>) = content.copy(
+        rows = content.rows.map { if (it is FormRowUiModel.Choice && it.id == questionId) it.copy(selectedOptionIds = selected) else it }
+    )
+
 }

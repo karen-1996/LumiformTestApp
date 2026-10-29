@@ -12,7 +12,6 @@
     <string name="form_last_updated">Last updated: %1$s</string>
     <string name="form_single_choice">Single choice</string>
     <string name="form_multiple_choice">Multiple choice</string>
-    <string name="form_response_option">• %1$s</string>
     <string name="form_load_error">Couldn\'t load the form. Please try again.</string>
     <string name="form_invalid_content">The received form is invalid. Please try again.</string>
     <string name="form_save_error">Couldn\'t save the form. Please try again.</string>
@@ -21,4 +20,7 @@
     <string name="form_cached_invalid_content">The received form is invalid. Showing saved content.</string>
     <string name="form_cached_save_error">Couldn\'t save the updated form. Showing saved content.</string>
     <string name="form_cached_read_error">Couldn\'t read saved updates. Showing the last available form.</string>
+    <string name="choice_save_error">Couldn\'t save the answer. Please try again.</string>
+    <string name="choice_unavailable">This option is no longer available. Please check the updated form.</string>
+    <string name="choice_read_unavailable">Couldn\'t read saved answers. Retry loading the form.</string>
 </resources>

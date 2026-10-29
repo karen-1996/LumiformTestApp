@@ -18,6 +18,7 @@ import java.time.Instant
 import javax.inject.Inject
 
 internal class FormEntityMapper @Inject constructor() {
+    private val selectionMapper by lazy { ChoiceSelectionMapper() }
     fun toStorage(document: FormDocument, lastUpdated: Instant): StoredForm {
         val nodes = mutableListOf<FormNodeEntity>()
         val sets = linkedMapOf<Long, ResponseSet>()
@@ -96,7 +97,9 @@ internal class FormEntityMapper @Inject constructor() {
             )
         }
         if (visited != stored.nodes.size) throw FormStorageException("Saved content has unreachable nodes")
-        return FormSnapshot(FormDocument(pages), Instant.ofEpochMilli(stored.metadata.lastUpdatedMillis))
+        return FormSnapshot(
+            FormDocument(pages), Instant.ofEpochMilli(stored.metadata.lastUpdatedMillis), selectionMapper.toDomain(stored)
+        )
     }
 
     private fun <T : Any> T?.required(field: String): T =

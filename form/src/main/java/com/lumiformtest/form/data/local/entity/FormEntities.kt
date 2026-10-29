@@ -53,7 +53,7 @@ internal data class ResponseOptionEntity(
         ),
         ForeignKey(entity = ResponseSetEntity::class, parentColumns = ["id"], childColumns = ["responseSetId"])
     ],
-    indices = [Index("snapshotId"), Index("parentId"), Index("responseSetId")]
+    indices = [Index("snapshotId"), Index("parentId"), Index("responseSetId"), Index(value = ["id", "responseSetId"], unique = true)]
 )
 internal data class FormNodeEntity(
     @PrimaryKey val id: Long,
@@ -68,3 +68,31 @@ internal data class FormNodeEntity(
 )
 
 internal enum class FormNodeType { PAGE, SECTION, TEXT, IMAGE, CHOICE }
+
+@Entity(
+    tableName = "selected_response",
+    primaryKeys = ["questionId", "responseSetId", "optionId"],
+    foreignKeys = [
+        ForeignKey(
+            entity = FormNodeEntity::class,
+            parentColumns = ["id", "responseSetId"], childColumns = ["questionId", "responseSetId"],
+            onDelete = ForeignKey.CASCADE
+        ),
+        ForeignKey(
+            entity = ResponseOptionEntity::class,
+            parentColumns = ["responseSetId", "id"], childColumns = ["responseSetId", "optionId"],
+            onDelete = ForeignKey.CASCADE
+        ),
+        ForeignKey(
+            entity = FormMetadataEntity::class, parentColumns = ["id"], childColumns = ["snapshotId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    indices = [Index(value = ["responseSetId", "optionId"]), Index("snapshotId")]
+)
+internal data class SelectedResponseEntity(
+    val questionId: Long,
+    val responseSetId: Long,
+    val optionId: Long,
+    val snapshotId: Int = 0
+)

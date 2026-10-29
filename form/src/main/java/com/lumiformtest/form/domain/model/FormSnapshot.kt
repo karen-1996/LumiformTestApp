@@ -2,7 +2,11 @@ package com.lumiformtest.form.domain.model
 
 import java.time.Instant
 
-internal data class FormSnapshot(val document: FormDocument, val lastUpdated: Instant)
+internal data class FormSnapshot(
+    val document: FormDocument,
+    val lastUpdated: Instant,
+    val selections: Map<Long, ChoiceSelection> = emptyMap()
+)
 
 internal sealed interface RefreshFormResult {
     data object Success : RefreshFormResult

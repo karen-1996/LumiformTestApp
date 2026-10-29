@@ -30,7 +30,8 @@ internal sealed interface FormRowUiModel {
 
     data class Choice(
         override val id: Long, override val parentId: Long, override val depth: Int,
-        val text: String, val responseSet: ResponseSetUiModel
+        val text: String, val responseSet: ResponseSetUiModel,
+        val selectedOptionIds: Set<Long> = emptySet()
     ) : FormRowUiModel
 }
 
@@ -43,3 +44,7 @@ internal data class ResponseSetUiModel(
 internal data class ResponseOptionUiModel(val id: Long, val label: String, val score: Int?)
 
 internal enum class FormRefreshFailureUi { FETCH, INVALID_CONTENT, STORAGE }
+
+internal data class ChoiceOptionUiInput(val questionId: Long, val responseSetId: Long, val optionId: Long)
+internal enum class ChoiceWriteFailureReasonUi { UNAVAILABLE, STORAGE, READ_UNAVAILABLE }
+internal data class ChoiceWriteFailureUi(val id: Long, val questionId: Long, val reason: ChoiceWriteFailureReasonUi)
