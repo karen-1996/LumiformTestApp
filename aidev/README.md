@@ -12,6 +12,7 @@ settings or install anything on a reviewer's machine.
 | [android](skills/android/SKILL.md) | Android code, manifests, resources, Gradle | Adapted from the provided Android skill |
 | [kotlin](skills/kotlin/SKILL.md) | Kotlin, coroutines, cancellation | Adapted from the provided Kotlin skill |
 | [compose](skills/compose/SKILL.md) | UI state, themes, strings, previews | Adapted from the provided Compose skill |
+| [edge-to-edge](skills/edge-to-edge/SKILL.md) | System bars, safe areas, native dark/light startup | Project adaptation of the provided Google edge-to-edge skill |
 | [navigation-3](skills/navigation-3/SKILL.md) | Typed keys, saved back stack, entry scope | Project adaptation of the provided Navigation 3 skill |
 | [pdf](skills/pdf/SKILL.md) | Read and verify the challenge document | Read-only subset of the provided PDF skill |
 | [skill-creator](skills/skill-creator/SKILL.md) | Maintain this guidance | Project adaptation of the provided skill-creator skill |

@@ -8,6 +8,7 @@ description: Change Compose screens, state-driven UI, themes, previews, or acces
 - Keep screen content stateless and connect the ViewModel in a route composable.
 - Collect screen state with `collectAsStateWithLifecycle`. Collect temporary outputs from the entry's lifecycle; keep a single consumer per output.
 - Use MaterialTheme and existing semantic resources for colors and typography. Do not add raw colors to screen code.
+- Follow the system light/dark mode. Keep native window/splash resources and system-bar icons aligned with Compose, and keep dynamic palette caches keyed by configuration changes.
 - Use string resources from `:resources` for visible text and shared resources for icons and other assets. Import `com.lumiformtest.resources.R`; do not add feature-local resources.
 - Append new string entries under `<!-- unchecked strings -->` in every supported locale of `:resources`.
 - Use null descriptions for decorative images and useful labels for controls.

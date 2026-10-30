@@ -1,9 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.LumiformTestApp" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Base.Theme.LumiformTestApp" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <style name="Theme.LumiformTestApp" parent="Base.Theme.LumiformTestApp">
+        <item name="android:colorBackground">@color/app_background</item>
+        <item name="android:windowBackground">@color/app_background</item>
+        <item name="android:statusBarColor">@color/app_background</item>
+        <item name="android:navigationBarColor">@color/app_background</item>
+        <item name="android:windowLightStatusBar">@bool/is_light_theme</item>
+        <item name="android:windowLightNavigationBar">@bool/is_light_theme</item>
+    </style>
 
     <style name="Theme.LumiformTestApp.Starting" parent="Theme.SplashScreen">
         <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="windowSplashScreenBackground">@color/app_background</item>
+        <item name="android:colorBackground">@color/app_background</item>
+        <item name="android:statusBarColor">@color/app_background</item>
+        <item name="android:navigationBarColor">@color/app_background</item>
+        <item name="android:windowLightStatusBar">@bool/is_light_theme</item>
+        <item name="android:windowLightNavigationBar">@bool/is_light_theme</item>
         <item name="postSplashScreenTheme">@style/Theme.LumiformTestApp</item>
     </style>
 </resources>

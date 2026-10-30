@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The native window should follow Compose's dark theme too. -->
+    <style name="Base.Theme.LumiformTestApp" parent="android:Theme.Material.NoActionBar" />
+</resources>

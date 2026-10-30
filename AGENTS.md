@@ -21,6 +21,7 @@ Skill routing:
 - Compose UI: [compose](aidev/skills/compose/SKILL.md).
 - Navigation and restoration: [navigation-3](aidev/skills/navigation-3/SKILL.md).
 - Startup handoff: [splash-startup](aidev/skills/splash-startup/SKILL.md).
+- System bars, insets, and mode changes: [edge-to-edge](aidev/skills/edge-to-edge/SKILL.md).
 - ViewModels and contracts: [project-mvi](aidev/skills/project-mvi/SKILL.md).
 - Layer models and transformations: [layer-mapping](aidev/skills/layer-mapping/SKILL.md).
 - API, Room, images, and offline behavior: [offline-data](aidev/skills/offline-data/SKILL.md).

@@ -24,6 +24,16 @@ This follows Android's [routing Activity pattern](https://developer.android.com/
 The custom-splash lint check is disabled only on this Activity because it never
 draws its own splash content.
 
+## Light and dark themes
+
+The app follows the device's light/dark setting. Compose uses Material 3 dynamic
+colors on Android 12+, with light/dark fallback palettes on older versions.
+The native window and splash also have matching night resources and system-bar
+icon settings; both Activities use AndroidX edge-to-edge handling.
+Dynamic palettes are remembered with configuration keys, so night mode and
+resource-color changes refresh them. The light image canvas keeps transparent
+black artwork readable in either mode.
+
 ## Structure
 
 - `app`: application, splash launcher, MainActivity, and root navigation.
@@ -290,7 +300,10 @@ Hilt Activity available only in debug builds. This is not a full process-death
 navigation test.
 
 The startup device test launches the app through its launcher intent and checks
-that MainActivity becomes the task root after the splash handoff.
+that MainActivity becomes the task root after the splash handoff. Theme tests
+resolve native window/splash colors and bar icons in both configurations, then
+switch Compose between system modes with fallback and dynamic palettes. They
+check readable text contrast and matching fallback window/background colors.
 
 Stateless form screen tests cover row kinds/headings, retry actions, cached content
 during refresh/failure, empty versus loading, saved list position, and long nested
