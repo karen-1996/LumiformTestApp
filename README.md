@@ -7,10 +7,11 @@ My implementation of the Lumiform Android coding challenge.
 The foundation includes feature modules, my custom MVI base, Hilt, and Navigation 3.
 The form feature has domain models, JSON validation, API fetching, and relational
 offline storage. The screen observes saved content, refreshes on first open, and
-renders pages, nested sections, text, choice controls, and image titles. Single
+renders pages, nested sections, text, choice controls, and image thumbnails. Single
 and multiple answers are saved locally and preserved when refreshed definitions
 still support them. Loading, empty, error/retry, refresh progress, and last-update
-states are implemented. Image loading follows in its own phase.
+states are implemented. Images open in a titled viewer and downloaded originals
+remain available offline.
 
 ## Startup
 
@@ -81,7 +82,7 @@ valid content. Empty documents, pages, and sections are supported.
 The `:networking` module provides singleton OkHttp and Retrofit instances through
 Hilt, following ASA. It owns the base URL, bounded connection/read/write/call
 timeouts, and the [HTTP logging interceptor](https://github.com/lysine-dev/okhttp/tree/main/okhttp-logging-interceptor).
-Body logging is enabled only in debug; release clients have no logging interceptor.
+Debug logs form bodies and image headers; release clients have no logging interceptor.
 The feature declares `FormApi` and creates it from the injected Retrofit instance.
 Form decoding, validation, and failure handling stay in `:form`.
 
@@ -108,8 +109,8 @@ observer. The ViewModel does not import Room or data-layer exceptions.
 
 Schemas 1 and 2 are exported under `form/schemas` and kept in Git. The explicit
 1 -> 2 migration adds selections and their indexes without clearing the saved
-form. There is no destructive-migration fallback. Image URLs are stored now;
-downloaded image files belong to the image phase.
+form. There is no destructive-migration fallback. Image URLs stay in Room;
+downloaded originals live in app-owned files.
 
 ## Choice persistence
 
@@ -169,10 +170,59 @@ state; indentation and section typography have readable lower bounds. Pure
 presentation mapping reuses flattened rows when only selections change, replacing
 only affected choice rows.
 
+The list uses validated unique node IDs as keys and separate content types for
+row reuse. The same callbacks are shared across rows, and item content captures
+only the values it needs. Choice options have keys qualified by response-set and
+option IDs, keeping focus with the option after a definition reorder. Each
+option is a separate skippable composable. Scroll position is read by the lazy
+layout rather than by the screen composition. These choices follow Android's
+[Compose performance guidance](https://developer.android.com/develop/ui/compose/performance/bestpractices).
+
 The UI applies navigation commands to a saved Navigation 3 back stack. Serializable
 keys hold only navigation arguments, and each entry owns its ViewModel and saved
-Compose state. The image destination is wired, but its content will be added with
-the image phase; there is no sample image button in the form screen.
+Compose state. Tapping a thumbnail sends its ID through the form's navigation
+output. The image entry resolves current title and URL from saved content through
+ObserveImageUseCase and its own MVI ViewModel, then maps metadata to a UI model.
+A removed image has a missing state; a failed saved-content read has retry.
+
+## Images
+
+I use [Coil 3.6.3](https://coil-kt.github.io/coil/changelog/) for image decoding,
+size-aware rendering, and a bounded memory cache. The Application supplies one
+Hilt-backed ImageLoader through Coil's lazy singleton factory. Its first creation
+runs on IO, with a fixed-size placeholder while preparing, so dependency setup
+does not block the UI thread. Preparation is shared by the form entry, so rows
+returning to the viewport get the prepared loader immediately. Thumbnails crop
+to a fixed height and decode at most 512 pixels on the longest edge, without enlarging
+small originals. Separate thumbnail/viewer memory keys keep a large viewer bitmap
+out of the scrolling list. The viewer fits the whole image and keeps its title visible.
+A shared light canvas keeps transparent black artwork readable in dark mode.
+Loading and retry states belong to the image component; they do not block form
+content or reset answers.
+
+Coil's HTTP fetcher is replaced with a small retained-file fetcher. The feature's
+ImageApi uses the shared Retrofit/OkHttp instance from :networking. Image requests send Accept: image/* so debug logging records only headers and
+keeps the response body streamed. The fetcher
+saves the original bytes before Coil displays them, so a thumbnail does not become
+the only available offline resolution. Originals also serve as the disk layer;
+Coil's separate evictable disk cache is disabled to avoid storing another copy.
+The extension follows Coil's [fetcher API](https://github.com/coil-kt/coil/blob/3.6.3/coil-core/src/commonMain/kotlin/coil3/fetch/Fetcher.kt).
+Image bytes stay inside this rendering/storage pipeline; domain and UI mapping
+still handle image metadata, without exposing platform files or bitmaps.
+
+Each full URL, including its query, has a SHA-256 filename. Requests for the same
+URL share a mutex. Downloads stream on IO, are limited to 20 MiB, and must pass a
+small raster decode before an atomic rename publishes the original. Failure or
+cancellation removes the temporary file. Existing valid files need no network;
+corrupt files can be downloaded again. Per-process file stamps (length and modified
+time) avoid repeating the validation decode while a retained file is unchanged.
+No database migration is needed here.
+
+For this small form, downloaded originals are retained until app data is cleared,
+including images removed from later definitions. URLs identify immutable images;
+changed bytes at the same URL are not automatically refreshed. There is no image
+prefetch or background download: an image must have finished loading once before
+it is available offline. Zoom and export are outside this phase.
 
 ## Setup
 
@@ -194,6 +244,7 @@ to all Android modules, following ASA; targetSdk applies to the app.
 ```
 
 Release enables code and resource shrinking; debug explicitly disables both.
+Routine verification uses debug builds; release checks are run only when requested.
 
 Base URLs are configured in `gradle.properties` as `networking.baseUrl.debug` and
 `networking.baseUrl.release`. Both use the challenge host by default. The networking
@@ -210,14 +261,17 @@ with API 26 or newer.
 ## Tests
 
 ```shell
-./gradlew :base:testDebugUnitTest :networking:testDebugUnitTest :networking:testReleaseUnitTest :form:testDebugUnitTest
+./gradlew :base:testDebugUnitTest :networking:testDebugUnitTest :form:testDebugUnitTest
 ```
 
 The JVM tests cover MVI behavior, destination keys, parsing, entity/domain mapping,
 HTTP responses, cache-preserving failures, cancellation, overlapping refreshes,
 domain/UI hierarchy and selection mapping, refresh reconciliation, and MVI
-cache/refresh timing, ordered writes, cancellation, and error recovery.
-Networking tests also check the shared transport and debug/release logging policy.
+cache/refresh timing, ordered writes, cancellation, and error recovery. Image tests
+cover original-file reuse, serialized downloads, failures, size limits, cancellation,
+corruption recovery, URL identity, and viewer metadata changes/removal.
+Networking tests also check the shared transport and logging policy. The optional
+:networking:testReleaseUnitTest task checks the release policy separately.
 HTTP tests use MockWebServer and do not depend on the public endpoint. The fixture in
 `form/src/test/resources/fixtures/lumiform-android-test.json` is a snapshot of the
 [challenge endpoint](https://gist.githubusercontent.com/aruana-lumiform/383e1291df3e0cc1d49aeb14d45f5b94/raw/lumiform-android-test.json).
@@ -242,7 +296,14 @@ Stateless form screen tests cover row kinds/headings, retry actions, cached cont
 during refresh/failure, empty versus loading, saved list position, and long nested
 text at a large font scale in both themes on a small layout width. Choice tests
 check radio/checkbox semantics, one action per whole-row tap, failure messages,
-control availability, and long labels with large fonts.
+control availability, and long labels with large fonts. Image UI tests cover
+thumbnail navigation, missing/read-error states, failure-to-success retry, actual
+thumbnail bitmap bounds/cache separation, and non-blocking first loader creation.
+List tests check anchor retention when rows above it are inserted/removed and
+focus/selection identity when response options reorder.
+A real Coil pipeline test loads a thumbnail, closes its loader, and uses a new
+loader with no network to decode the larger retained original. Invalid image
+bytes are rejected before publishing a file.
 
 The form device tests use a real Room database to check reopen persistence,
 offline refresh failure, foreign-key rollback, empty-cache semantics, and complete
@@ -257,7 +318,11 @@ emulator's network disabled and no active network, a force-stop/relaunch display
 saved content and selected answers, retained the successful update time, and
 offered retry after refresh failed. Another checkbox answer was saved offline.
 After reconnecting, a successful refresh retained all answers and updated the
-refresh time. Downloaded images are still part of the image phase.
+refresh time. Both image originals were also downloaded in the real app. With no
+active network, a force-stop/relaunch loaded thumbnails and opened the titled
+viewer. Back restored the exact scrolled form position. The open viewer also
+returned from Recents after the background app process was killed, while still
+offline. These are manual emulator checks, separate from saved-state UI tests.
 
 ## AI development guidance
 

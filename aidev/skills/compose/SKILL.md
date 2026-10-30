@@ -14,6 +14,10 @@ description: Change Compose screens, state-driven UI, themes, previews, or acces
 - Respect Scaffold and system-bar insets. Check text wrapping, font scaling, and small-screen layout when changing visual content.
 - Put reusable components in component files. Do not add composable extension functions to screen files.
 - Keep previews independent of Hilt, network access, and databases.
+- Keep lazy item keys based on validated node IDs and content types based on row structure. Key response options by response-set/option IDs so reordered definitions retain the correct focus and state.
+- Limit item captures to row inputs and shared callbacks. Reuse unchanged rows from mapping and verify skippability with compiler reports before adding stability annotations.
+- Prepare the lazy image loader off the UI thread and share its State at the form entry. Read that State only in image consumers so returning rows reuse the prepared loader immediately.
+- Keep decoded-thumbnail/cache tests separate from frame-time claims. Compiler reports and software-rendered emulator behavior do not establish a frame-rate improvement.
 
 Use focused UI checks for actual interactions and restoration. Scan changed
 screens for hardcoded visible strings and colors before finishing.

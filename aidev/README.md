@@ -30,8 +30,8 @@ Navigation and startup guidance link to the official documentation instead.
 | [offline-data](skills/offline-data/SKILL.md) | Preserve hierarchy, selections, and saved content when refresh fails |
 | [review-workflow](skills/review-workflow/SKILL.md) | Keep changes reviewable and record meaningful verification |
 
-The offline skill records the agreed direction for the next phases. It does not
-mean that Room, networking, selection persistence, or image storage already exist.
+The offline skill records the implemented storage boundaries and image retention
+policy. Future work still needs explicit scope and review.
 
 Keep skills focused. Add new guidance when an actual feature or failure needs it,
 and verify library APIs against their official documentation when changing them.

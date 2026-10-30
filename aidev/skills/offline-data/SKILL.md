@@ -20,7 +20,10 @@ Follow the implemented API/storage boundaries. Add selection and image behavior 
 - Selection writes use their own short Room transactions, not the mutex spanning a network refresh. Keep refresh timestamps unchanged by answer writes, and migrate schema 1 -> 2 without clearing existing content.
 - Enforce single-choice replacement and multi-choice toggles transactionally, using the saved question definition.
 - Serialize or coalesce overlapping refreshes so older requests cannot overwrite newer data.
-- Saving image URLs is not saving images. Define retention for downloaded originals and test thumbnails and the viewer offline after restart.
+- Saving image URLs is not saving images. Coil's retained-file fetcher uses the feature ImageApi with shared Retrofit, validates bounded original downloads, and publishes files atomically. Keep original IO outside presentation and never save thumbnail-sized decoded output as the original.
+- ImageApi marks requests with Accept: image/*; keep shared debug logging at headers for those requests so body logging cannot buffer downloads.
+- Treat the full URL as immutable image identity. Originals in filesDir/form-images are retained until app data is cleared, even after definitions remove a URL. Coil has one lazy Hilt-backed loader and a bounded memory cache; originals replace its separate disk cache. Test both thumbnails and the larger viewer with a new loader and no network.
+- Navigate with an image ID and resolve metadata from saved form data through the viewer's use case/MVI/mapping path. Handle removed images and failed saved-content reads explicitly.
 - A failed request is not proof of no connectivity. Describe the failed refresh accurately and provide retry without hiding saved content.
 - There is no answer-upload endpoint in this challenge. Do not add an outbox, background sync, or scoring behavior without a requirement.
 

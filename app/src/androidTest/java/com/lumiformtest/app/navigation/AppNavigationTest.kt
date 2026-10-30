@@ -39,14 +39,14 @@ class AppNavigationTest {
         val back = compose.activity.getString(R.string.back)
         compose.onNodeWithText(formTitle).assertIsDisplayed()
 
-        compose.runOnIdle { backStack.add(FormDestination.Image(imageId = 9)) }
+        compose.runOnIdle { backStack.add(FormDestination.Image(imageId = Long.MAX_VALUE)) }
         compose.onNodeWithText(imageUnavailable).assertIsDisplayed()
 
         restoration.emulateSavedInstanceStateRestore()
 
         compose.runOnIdle {
             assertEquals(2, backStack.size)
-            assertEquals(FormDestination.Image(imageId = 9), backStack.last())
+            assertEquals(FormDestination.Image(imageId = Long.MAX_VALUE), backStack.last())
         }
         compose.onNodeWithText(imageUnavailable).assertIsDisplayed()
         compose.onNodeWithText(back).performClick()

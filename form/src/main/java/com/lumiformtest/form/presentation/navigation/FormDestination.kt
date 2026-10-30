@@ -8,7 +8,7 @@ sealed interface FormDestination : NavKey {
     @Serializable
     data object Form : FormDestination
 
-    // I pass only the ID. The viewer will read the image data from local storage.
+    // I pass only the ID. The viewer reads the image data from local storage.
     @Serializable
     data class Image(val imageId: Long) : FormDestination
 }

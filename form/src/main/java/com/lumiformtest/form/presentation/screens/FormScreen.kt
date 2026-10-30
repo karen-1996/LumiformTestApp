@@ -37,6 +37,7 @@ import com.lumiformtest.form.presentation.components.FormStatus
 import com.lumiformtest.form.presentation.components.formFailureMessage
 import com.lumiformtest.form.presentation.viewmodel.FormAction
 import com.lumiformtest.form.presentation.viewmodel.FormUiState
+import com.lumiformtest.form.presentation.model.ChoiceOptionUiInput
 import com.lumiformtest.form.presentation.model.ChoiceWriteFailureReasonUi
 import com.lumiformtest.resources.R
 
@@ -48,6 +49,9 @@ internal fun FormScreen(
     modifier: Modifier = Modifier
 ) {
     val listState = rememberLazyListState()
+    val choicesEnabled = !state.hasReadFailure
+    val openImage: (Long) -> Unit = remember(onAction) { { onAction(FormAction.OpenImage(it)) } }
+    val selectOption: (ChoiceOptionUiInput) -> Unit = remember(onAction) { { onAction(FormAction.OptionClicked(it)) } }
     val hasFailure = state.hasReadFailure || state.refreshFailure != null
     val snackbarHost = remember { SnackbarHostState() }
     val latestAction by rememberUpdatedState(onAction)
@@ -92,24 +96,25 @@ internal fun FormScreen(
             contentPadding = PaddingValues(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            item(key = "status") { FormStatus(state) }
+            item(key = "status", contentType = "status") { FormStatus(state) }
             when {
-                state.isLoading -> item(key = "loading") {
+                state.isLoading -> item(key = "loading", contentType = "loading") {
                     Box(Modifier.fillMaxWidth().padding(48.dp), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator(Modifier.testTag("form_loading"))
                     }
                 }
                 state.content != null -> {
                     if (state.content.rows.isEmpty()) {
-                        item(key = "empty") {
+                        item(key = "empty", contentType = "empty") {
                             Text(stringResource(R.string.form_empty), style = MaterialTheme.typography.bodyLarge)
                         }
                     }
+                    // Saved node IDs are unique, so refresh can keep each row's scroll state.
                     items(state.content.rows, key = { it.id }, contentType = { it::class }) { row ->
-                        FormRow(row, choicesEnabled = !state.hasReadFailure) { onAction(FormAction.OptionClicked(it)) }
+                        FormRow(row, choicesEnabled, onImageClick = openImage, onChoiceClick = selectOption)
                     }
                 }
-                else -> item(key = "error") {
+                else -> item(key = "error", contentType = "error") {
                     Text(formFailureMessage(state), style = MaterialTheme.typography.bodyLarge)
                 }
             }

@@ -8,6 +8,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalInputModeManager
+import androidx.compose.ui.input.InputMode
+import androidx.compose.ui.input.InputModeManager
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
@@ -19,11 +22,15 @@ import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.click
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.performScrollToKey
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.text.TextLayoutResult
@@ -87,6 +94,17 @@ class FormScreenTest {
         compose.onNodeWithTag("form_list").performScrollToKey(6L)
         compose.onNodeWithText("Choose an area").assertIsDisplayed()
         compose.onNodeWithText("Entrance").assertIsDisplayed()
+    }
+
+    @Test
+    fun tappingThumbnailSendsOnlyItsImageId() {
+        val actions = mutableListOf<FormAction>()
+        compose.setContent { LumiformTestAppTheme {
+            FormScreen(FormUiState(content = content, isReadingCache = false), { actions += it })
+        } }
+        compose.onNodeWithTag("form_list").performScrollToKey(5L)
+        compose.onNodeWithTag("image_thumbnail_5").performTouchInput { click(Offset(center.x, 8f)) }
+        compose.runOnIdle { assertEquals(listOf(FormAction.OpenImage(5)), actions) }
     }
 
     @Test
@@ -255,6 +273,50 @@ class FormScreenTest {
             assertFalse(layouts.single().hasVisualOverflow)
             compose.runOnIdle { dark = true }
         }
+    }
+
+    @Test
+    fun refreshInsertionAndRemovalKeepTheVisibleItemAnchoredById() {
+        val rows = listOf(FormRowUiModel.Page(1, "Page")) + (2L..90L).map {
+            FormRowUiModel.Text(it, 1, 1, "Row $it")
+        }
+        var state by mutableStateOf(FormUiState(content = content.copy(rows = rows), isReadingCache = false))
+        compose.setContent { LumiformTestAppTheme { FormScreen(state, {}) } }
+        compose.onNodeWithTag("form_list").performScrollToKey(50L)
+        val before = compose.onNodeWithText("Row 50").fetchSemanticsNode().boundsInRoot.top
+        compose.runOnIdle {
+            state = state.copy(content = state.content!!.copy(rows =
+                listOf(rows.first(), FormRowUiModel.Text(1000, 1, 1, "Inserted")) + rows.drop(1)
+            ))
+        }
+        assertEquals(before, compose.onNodeWithText("Row 50").fetchSemanticsNode().boundsInRoot.top, 0.1f)
+        compose.runOnIdle {
+            state = state.copy(content = state.content!!.copy(rows = state.content!!.rows.filter { it.id !in 2L..30L }))
+        }
+        assertEquals(before, compose.onNodeWithText("Row 50").fetchSemanticsNode().boundsInRoot.top, 0.1f)
+    }
+
+    @Test
+    fun refreshedOptionOrderKeepsFocusAndSelectionOnTheSameId() {
+        var state by mutableStateOf(FormUiState(content = selected(choiceContent, 2, setOf(1)), isReadingCache = false))
+        val actions = mutableListOf<FormAction>()
+        lateinit var inputModeManager: InputModeManager
+        compose.setContent {
+            inputModeManager = LocalInputModeManager.current
+            LumiformTestAppTheme { FormScreen(state, { actions += it }) }
+        }
+        compose.runOnIdle { inputModeManager.requestInputMode(InputMode.Keyboard) }
+        compose.onNodeWithText("First option").performSemanticsAction(SemanticsActions.RequestFocus) { it() }
+        compose.onNodeWithText("First option").assertIsFocused().assertIsSelected()
+        compose.runOnIdle {
+            state = state.copy(content = state.content!!.copy(rows = state.content!!.rows.map {
+                if (it is FormRowUiModel.Choice && it.id == 2L)
+                    it.copy(responseSet = it.responseSet.copy(options = it.responseSet.options.reversed())) else it
+            }))
+        }
+        compose.onNodeWithText("First option").assertIsFocused().assertIsSelected()
+        compose.onNodeWithText("Second option").assertIsNotSelected().performClick()
+        compose.runOnIdle { assertEquals(listOf(FormAction.OptionClicked(ChoiceOptionUiInput(2, 101, 2))), actions) }
     }
 
     private val choiceContent by lazy {

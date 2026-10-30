@@ -3,7 +3,10 @@
     <!-- unchecked strings -->
     <string name="form_empty">This form has no content.</string>
     <string name="image_title">Image</string>
-    <string name="image_unavailable">Image unavailable.</string>
+    <string name="image_unavailable">This image is no longer in the saved form.</string>
+    <string name="image_open">Open image: %1$s</string>
+    <string name="image_load_error">Couldn\'t load the image. Please try again.</string>
+    <string name="image_read_error">Couldn\'t read the saved image details.</string>
     <string name="back">Back</string>
     <string name="form_title">Form</string>
     <string name="form_refresh">Refresh</string>
