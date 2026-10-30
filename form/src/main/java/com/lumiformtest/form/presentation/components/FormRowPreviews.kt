@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.lumiformtest.design.theme.Dimensions
 import com.lumiformtest.form.presentation.model.FormRowUiModel
 import com.lumiformtest.form.presentation.preview.FormPreviewData
 import com.lumiformtest.form.presentation.preview.FormPreviewTheme
@@ -48,7 +49,7 @@ private fun MultipleChoiceRowPreview() = PreviewRow(FormPreviewData.multipleChoi
 private fun PreviewRow(row: FormRowUiModel, darkTheme: Boolean = false) {
     FormPreviewTheme(darkTheme = darkTheme) {
         Surface {
-            Box(Modifier.width(320.dp).padding(16.dp)) {
+            Box(Modifier.width(320.dp).padding(Dimensions.spacingLarge)) {
                 FormRow(row, choicesEnabled = true, onImageClick = {}, onChoiceClick = {})
             }
         }

@@ -127,9 +127,10 @@ class FormFixtureImageTest {
                 }
             }
             val first = images.first()
+            val thumbnailWidth = successes.first { it.first == first.imageUrl }.second.image.width
             compose.onNodeWithTag("form_list").performScrollToKey(first.id)
             compose.onNodeWithTag("image_thumbnail_${first.id}").performClick()
-            compose.waitUntil(5_000) { successes.any { it.first == first.imageUrl && it.second.image.width > 512 } }
+            compose.waitUntil(5_000) { successes.any { it.first == first.imageUrl && it.second.image.width > thumbnailWidth } }
             compose.onNodeWithContentDescription(first.title).assertIsDisplayed()
             assertEquals("The same URL should reuse one retained original", 1, requests[first.imageUrl]?.get())
             assertTrue("Broken downloads must not leave partial files", directory.listFiles().orEmpty().none { it.name.endsWith(".part") })

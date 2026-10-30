@@ -14,7 +14,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
+import com.lumiformtest.design.theme.Dimensions
 import com.lumiformtest.form.presentation.model.FormRefreshFailureUi
 import com.lumiformtest.form.presentation.viewmodel.FormUiState
 import com.lumiformtest.resources.R
@@ -32,7 +32,7 @@ internal fun FormStatus(state: FormUiState) {
         DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).withLocale(locale).withZone(zone)
             .format(Instant.ofEpochMilli(content.lastUpdatedEpochMillis))
     }
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(Dimensions.spacingSmall)) {
         Text(
             stringResource(R.string.form_last_updated, updated), style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant

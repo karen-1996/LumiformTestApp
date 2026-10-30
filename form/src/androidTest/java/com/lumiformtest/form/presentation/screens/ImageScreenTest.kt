@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.layout.ContentScale
@@ -31,6 +32,8 @@ import coil3.EventListener
 import coil3.decode.DataSource
 import coil3.request.ImageRequest
 import coil3.request.SuccessResult
+import coil3.size.Size
+import com.lumiformtest.design.theme.Dimensions
 import com.lumiformtest.design.theme.LumiformTestAppTheme
 import com.lumiformtest.form.FormScreenTestActivity
 import com.lumiformtest.form.data.local.BitmapImageFileValidator
@@ -173,6 +176,7 @@ class ImageScreenTest {
             finally { bitmap.recycle() }
         }
         val results = CopyOnWriteArrayList<SuccessResult>()
+        val resolvedSizes = CopyOnWriteArrayList<Size>()
         val requests = AtomicInteger()
         val validations = AtomicInteger()
         val api = object : ImageApi {
@@ -186,20 +190,28 @@ class ImageScreenTest {
             BitmapImageFileValidator().isValid(it)
         }
         val loader = ImageLoader.Builder(context).eventListener(object : EventListener() {
+            override fun resolveSizeEnd(request: ImageRequest, size: Size) { resolvedSizes += size }
             override fun onSuccess(request: ImageRequest, result: SuccessResult) { results += result }
         }).components {
             add(StoredImageFetcher.Factory(ImageFileStore(directory, api, validator, Dispatchers.IO)))
         }.build()
         var thumbnail by mutableStateOf(false)
+        var thumbnailDensity by mutableStateOf(1f)
         try {
             compose.setContent { LumiformTestAppTheme {
-                val density = LocalDensity.current
-                FormImage(
-                    "https://example.com/large.png", "Large image",
-                    modifier = with(density) { Modifier.size(1024.toDp(), 512.toDp()) },
-                    contentScale = if (thumbnail) ContentScale.Crop else ContentScale.Fit,
-                    imageLoader = loader, isThumbnail = thumbnail
-                )
+                val density = if (thumbnail) Density(thumbnailDensity) else LocalDensity.current
+                CompositionLocalProvider(LocalDensity provides density) {
+                    // The app has separate layout nodes for the list and viewer.
+                    key(thumbnail, thumbnailDensity) {
+                        FormImage(
+                            "https://example.com/large.png", "Large image",
+                            modifier = if (thumbnail) Modifier.size(Dimensions.imageThumbnailSize)
+                                else with(density) { Modifier.size(1024.toDp(), 512.toDp()) },
+                            contentScale = ContentScale.Fit,
+                            imageLoader = loader, isThumbnail = thumbnail
+                        )
+                    }
+                }
             } }
             compose.waitUntil(5_000) { results.size == 1 }
             val viewer = results[0]
@@ -207,8 +219,9 @@ class ImageScreenTest {
             compose.runOnIdle { thumbnail = true }
             compose.waitUntil(5_000) { results.size == 2 }
             val small = results[1]
-            assertTrue(small.image.width <= 512 && small.image.height <= 512)
-            assertEquals(512, small.image.width)
+            val thumbnailPixels = with(Density(1f)) { Dimensions.imageThumbnailSize.roundToPx() }
+            assertEquals(Size(thumbnailPixels, thumbnailPixels), resolvedSizes.last())
+            assertTrue(small.image.width < viewer.image.width)
             assertNotEquals(viewer.memoryCacheKey, small.memoryCacheKey)
             assertEquals(1, requests.get())
             assertEquals(1, validations.get())
@@ -220,7 +233,18 @@ class ImageScreenTest {
             compose.runOnIdle { thumbnail = true }
             compose.waitUntil(5_000) { results.size == 4 }
             assertEquals(DataSource.MEMORY_CACHE, results[3].dataSource)
-            assertEquals(512, results[3].image.width)
+            assertEquals(small.image.width, results[3].image.width)
+            // Recreate the same thumbnail at denser display scales.
+            for (density in listOf(2f, 3f)) {
+                val previousResults = results.size
+                compose.runOnIdle { thumbnailDensity = density }
+                compose.waitUntil(5_000) { results.size == previousResults + 1 }
+                val target = with(Density(density)) { Dimensions.imageThumbnailSize.roundToPx() }
+                assertEquals(Size(target, target), resolvedSizes.last())
+                assertTrue(results.last().image.width >= target)
+                assertTrue(results.last().image.width < viewer.image.width)
+            }
+            assertEquals(1, requests.get())
             assertEquals(1, validations.get())
         } finally { loader.shutdown(); directory.deleteRecursively() }
     }

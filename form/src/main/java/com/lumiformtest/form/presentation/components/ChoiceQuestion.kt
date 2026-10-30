@@ -26,6 +26,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.lumiformtest.design.theme.Dimensions
 import com.lumiformtest.design.components.ChoiceOptionChip
 import com.lumiformtest.form.presentation.model.ChoiceOptionUiInput
 import com.lumiformtest.form.presentation.model.FormRowUiModel
@@ -51,7 +52,7 @@ internal fun ChoiceQuestion(
         }
     }
     val scoreFormatter = remember(locale) { lazy { NumberFormat.getIntegerInstance(locale) } }
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(Dimensions.spacingSmall)) {
         Text(question.text, modifier = Modifier.padding(contentPadding), style = MaterialTheme.typography.bodyMedium)
         if (options.isEmpty()) {
             Text(stringResource(R.string.choice_no_options), modifier = Modifier.padding(contentPadding),
@@ -62,7 +63,7 @@ internal fun ChoiceQuestion(
                 state = rememberLazyListState(),
                 modifier = Modifier.fillMaxWidth().testTag("choice_options_${question.id}")
                     .then(if (multiple) Modifier else Modifier.selectableGroup()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingSmall),
                 contentPadding = contentPadding,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -112,7 +113,7 @@ private fun DisabledQuestionPreview() = PreviewQuestion(FormPreviewData.singleCh
 private fun PreviewQuestion(question: FormRowUiModel.Choice, enabled: Boolean = true, darkTheme: Boolean = false) {
     FormPreviewTheme(darkTheme = darkTheme) {
         Surface {
-            Box(Modifier.width(320.dp).padding(16.dp)) { ChoiceQuestion(question, enabled, {}) }
+            Box(Modifier.width(320.dp).padding(Dimensions.spacingLarge)) { ChoiceQuestion(question, enabled, {}) }
         }
     }
 }
@@ -141,7 +142,7 @@ private fun EdgeToEdgeQuestionPreview() {
     FormPreviewTheme {
         Surface {
             ChoiceQuestion(FormPreviewData.singleChoice, enabled = true, onOptionClick = {},
-                contentPadding = PaddingValues(start = 56.dp, end = 20.dp))
+                contentPadding = PaddingValues(start = Dimensions.screenPadding + Dimensions.sectionIndent * 3, end = Dimensions.screenPadding))
         }
     }
 }

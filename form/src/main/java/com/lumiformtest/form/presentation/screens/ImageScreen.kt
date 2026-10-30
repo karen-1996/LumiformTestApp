@@ -23,7 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
+import com.lumiformtest.design.theme.Dimensions
 import com.lumiformtest.form.presentation.components.FormImage
 import com.lumiformtest.form.presentation.model.ImageUiModel
 import com.lumiformtest.form.presentation.navigation.sharedImageModifier
@@ -50,11 +50,11 @@ internal fun ImageScreen(state: ImageUiState, onBack: () -> Unit, onRetry: () ->
     ) { innerPadding ->
         Box(Modifier.padding(innerPadding)) {
             Box(Modifier.fillMaxSize().imageTransitionViewport()) {
-                Column(Modifier.fillMaxSize().padding(20.dp)) {
+                Column(Modifier.fillMaxSize().padding(Dimensions.screenPadding)) {
                     state.image?.let {
                         // Keep a long title readable without leaving no room for the image.
                         Text(it.title, style = MaterialTheme.typography.titleLarge,
-                            modifier = Modifier.heightIn(max = 140.dp).verticalScroll(rememberScrollState()).padding(bottom = 12.dp))
+                            modifier = Modifier.heightIn(max = Dimensions.imageTitleMaxHeight).verticalScroll(rememberScrollState()).padding(bottom = Dimensions.spacingMedium))
                     }
                     Box(Modifier.weight(1f).fillMaxSize(), contentAlignment = Alignment.Center) {
                         when {

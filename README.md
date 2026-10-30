@@ -63,6 +63,8 @@ There are no separate data or domain Gradle modules.
 Shared Android `res/` files live in `resources/src/main/res`. Modules that use them
 depend directly on `:resources` and import `com.lumiformtest.resources.R`.
 I keep Compose theme code and reusable UI components in `:design`, as in ASA.
+Shared Compose sizes and spacing live in `design/theme/Dimensions.kt`, including
+the thumbnail size used by the form, previews, and image sizing tests.
 Shared components accept display values and callbacks; feature models and answer
 handling stay in `:form`.
 
@@ -237,8 +239,9 @@ Hilt-backed ImageLoader through Coil's lazy singleton factory. Its first creatio
 runs on IO, with a fixed-size placeholder while preparing, so dependency setup
 does not block the UI thread. Preparation is shared by the form entry, so rows
 returning to the viewport get the prepared loader immediately. Thumbnails fit the
-whole image inside a compact 120 dp square and decode at most 512 pixels on the
-longest edge, without enlarging small originals. Separate thumbnail/viewer memory
+whole image inside a compact 120 dp square. AsyncImage resolves the decode target
+from measured layout bounds and device density, without enlarging small originals.
+Coil can reuse a suitable nearby decode size. Separate thumbnail/viewer memory
 keys keep a large viewer bitmap out of the scrolling list. The viewer fits the
 whole image and keeps its title visible.
 A shared light canvas keeps transparent black artwork readable in dark mode.

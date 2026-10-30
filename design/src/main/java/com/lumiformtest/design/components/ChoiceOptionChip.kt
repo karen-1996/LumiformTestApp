@@ -26,7 +26,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
+import com.lumiformtest.design.theme.Dimensions
 import com.lumiformtest.design.theme.LumiformTestAppTheme
 
 private val ChipLineBreaks by lazy { Regex("[\\r\\n\\t\\u2028\\u2029]+") }
@@ -58,20 +58,20 @@ fun ChoiceOptionChip(
         selected = selected, enabled = enabled, role = Role.RadioButton, onClick = onClick
     )
     Surface(
-        modifier = modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp).clip(shape).then(selection).then(
+        modifier = modifier.sizeIn(minWidth = Dimensions.minimumTouchTarget, minHeight = Dimensions.minimumTouchTarget).clip(shape).then(selection).then(
             if (accessibilityLabel != null) Modifier.semantics { contentDescription = accessibilityLabel } else Modifier
         ),
         shape = shape,
         color = if (selected) colors.primaryContainer else colors.surfaceContainerLow,
         contentColor = foreground,
         border = BorderStroke(
-            if (selected) 2.dp else 1.dp,
+            if (selected) Dimensions.selectedBorderWidth else Dimensions.borderWidth,
             if (enabled && selected) colors.primary else colors.outlineVariant
         )
     ) {
         Row(
-            Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically
+            Modifier.padding(horizontal = Dimensions.spacingLarge, vertical = Dimensions.chipVerticalPadding),
+            horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingSmall), verticalAlignment = Alignment.CenterVertically
         ) {
             Text(displayLabel, Modifier.width(IntrinsicSize.Max), style = MaterialTheme.typography.labelLarge, maxLines = 1, softWrap = false)
             if (badge != null) Surface(
@@ -79,7 +79,8 @@ fun ChoiceOptionChip(
                 color = if (enabled && selected) colors.primary else colors.surfaceContainerHighest,
                 contentColor = if (enabled && selected) colors.onPrimary else foreground
             ) {
-                Text(badge, Modifier.sizeIn(minWidth = 24.dp, minHeight = 24.dp).padding(horizontal = 8.dp, vertical = 4.dp),
+                Text(badge, Modifier.sizeIn(minWidth = Dimensions.chipBadgeMinSize, minHeight = Dimensions.chipBadgeMinSize)
+                    .padding(horizontal = Dimensions.spacingSmall, vertical = Dimensions.spacingExtraSmall),
                     textAlign = TextAlign.Center, style = MaterialTheme.typography.labelSmall)
             }
         }
@@ -110,7 +111,7 @@ private fun MultilineChipPreview() = PreviewChip(selected = false, label = "Entr
 private fun PreviewChip(selected: Boolean, enabled: Boolean = true, darkTheme: Boolean = false, badge: String? = null, label: String = "Equipment checks") {
     LumiformTestAppTheme(darkTheme = darkTheme, dynamicColor = false) {
         Surface {
-            Box(Modifier.padding(16.dp).horizontalScroll(rememberScrollState())) {
+            Box(Modifier.padding(Dimensions.spacingLarge).horizontalScroll(rememberScrollState())) {
                 ChoiceOptionChip(label, multiple = true, selected = selected, enabled = enabled, onClick = {}, badge = badge)
             }
         }

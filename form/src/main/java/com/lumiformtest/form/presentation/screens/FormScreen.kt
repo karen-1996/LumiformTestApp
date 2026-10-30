@@ -31,7 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
+import com.lumiformtest.design.theme.Dimensions
 import com.lumiformtest.form.presentation.components.FormRow
 import com.lumiformtest.form.presentation.components.FormStatus
 import com.lumiformtest.form.presentation.components.formFailureMessage
@@ -96,31 +96,31 @@ internal fun FormScreen(
                 state = listState,
                 modifier = Modifier.fillMaxSize().imageTransitionViewport().testTag("form_list"),
                 // Choice rows own their side padding so chips can scroll to the screen edges.
-                contentPadding = PaddingValues(vertical = 20.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                contentPadding = PaddingValues(vertical = Dimensions.screenPadding),
+                verticalArrangement = Arrangement.spacedBy(Dimensions.spacingMedium)
             ) {
                 item(key = "status", contentType = "status") {
-                    Box(Modifier.padding(horizontal = 20.dp)) { FormStatus(state) }
+                    Box(Modifier.padding(horizontal = Dimensions.screenPadding)) { FormStatus(state) }
                 }
                 when {
                     state.isLoading -> item(key = "loading", contentType = "loading") {
-                        Box(Modifier.fillMaxWidth().padding(48.dp), contentAlignment = Alignment.Center) {
+                        Box(Modifier.fillMaxWidth().padding(Dimensions.loadingContentPadding), contentAlignment = Alignment.Center) {
                             CircularProgressIndicator(Modifier.testTag("form_loading"))
                         }
                     }
                     state.content != null -> {
                         if (state.content.rows.isEmpty()) {
                             item(key = "empty", contentType = "empty") {
-                                Text(stringResource(R.string.form_empty), modifier = Modifier.padding(horizontal = 20.dp), style = MaterialTheme.typography.bodyLarge)
+                                Text(stringResource(R.string.form_empty), modifier = Modifier.padding(horizontal = Dimensions.screenPadding), style = MaterialTheme.typography.bodyLarge)
                             }
                         }
                         // Saved node IDs are unique, so refresh can keep each row's scroll state.
                         items(state.content.rows, key = { it.id }, contentType = { it::class }) { row ->
-                            FormRow(row, choicesEnabled, onImageClick = openImage, onChoiceClick = selectOption, horizontalPadding = 20.dp)
+                            FormRow(row, choicesEnabled, onImageClick = openImage, onChoiceClick = selectOption, horizontalPadding = Dimensions.screenPadding)
                         }
                     }
                     else -> item(key = "error", contentType = "error") {
-                        Text(formFailureMessage(state), modifier = Modifier.padding(horizontal = 20.dp), style = MaterialTheme.typography.bodyLarge)
+                        Text(formFailureMessage(state), modifier = Modifier.padding(horizontal = Dimensions.screenPadding), style = MaterialTheme.typography.bodyLarge)
                     }
                 }
             }

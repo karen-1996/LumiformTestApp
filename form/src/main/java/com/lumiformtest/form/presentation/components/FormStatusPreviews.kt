@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.lumiformtest.design.theme.Dimensions
 import com.lumiformtest.form.presentation.model.FormRefreshFailureUi
 import com.lumiformtest.form.presentation.preview.FormPreviewData
 import com.lumiformtest.form.presentation.preview.FormPreviewTheme
@@ -43,7 +44,7 @@ private fun FailedReadStatusPreview() = PreviewStatus(FormUiState(
 private fun PreviewStatus(state: FormUiState, darkTheme: Boolean = false) {
     FormPreviewTheme(darkTheme = darkTheme) {
         Surface {
-            Box(Modifier.width(320.dp).padding(16.dp)) { FormStatus(state) }
+            Box(Modifier.width(320.dp).padding(Dimensions.spacingLarge)) { FormStatus(state) }
         }
     }
 }

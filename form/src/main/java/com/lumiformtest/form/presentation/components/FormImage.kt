@@ -37,6 +37,7 @@ import coil3.compose.asPainter
 import coil3.request.ImageRequest
 import coil3.size.Precision
 import coil3.size.Scale
+import com.lumiformtest.design.theme.Dimensions
 import com.lumiformtest.form.presentation.preview.FormPreviewTheme
 import com.lumiformtest.form.presentation.navigation.imageTransitionPreview
 import com.lumiformtest.form.presentation.navigation.movingImagePreview
@@ -72,7 +73,8 @@ internal fun FormImage(
             // A viewer bitmap should never become the list's thumbnail from memory cache.
             .memoryCacheKey("${if (isThumbnail) "thumbnail" else "viewer"}:$url")
             .apply {
-                if (isThumbnail) size(512).scale(Scale.FIT).precision(Precision.INEXACT)
+                // AsyncImage resolves the measured bounds in pixels, including device density.
+                if (isThumbnail) scale(Scale.FIT).precision(Precision.INEXACT)
                 // Keep the thumbnail visible until the original is decoded.
                 else placeholderMemoryCacheKey("thumbnail:$url")
             }
@@ -115,7 +117,7 @@ private fun ImageFeedback(status: ImageLoadStatus, onRetry: () -> Unit) {
     when (status) {
         ImageLoadStatus.LOADING -> CircularProgressIndicator(Modifier.testTag("image_loading"))
         ImageLoadStatus.FAILED -> Column(
-            Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally
+            Modifier.padding(Dimensions.spacingMedium), horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(stringResource(R.string.image_load_error), style = MaterialTheme.typography.bodyMedium)
             TextButton(onClick = onRetry) { Text(stringResource(R.string.form_retry)) }
@@ -129,9 +131,9 @@ private enum class ImageLoadStatus { LOADING, PLACEHOLDER, READY, FAILED }
 @Preview(name = "Thumbnail", showBackground = true)
 @Composable
 private fun ThumbnailPreview() {
-    FormPreviewTheme() {
+    FormPreviewTheme {
         Surface(shape = MaterialTheme.shapes.medium) {
-            FormImage("preview://image", null, Modifier.size(120.dp), isThumbnail = true)
+            FormImage("preview://image", null, Modifier.size(Dimensions.imageThumbnailSize), isThumbnail = true)
         }
     }
 }
@@ -139,7 +141,7 @@ private fun ThumbnailPreview() {
 @Preview(name = "Viewer image", showBackground = true)
 @Composable
 private fun ViewerImagePreview() {
-    FormPreviewTheme() {
+    FormPreviewTheme {
         FormImage("preview://image", "Welcome image", Modifier.size(320.dp, 420.dp))
     }
 }
@@ -156,7 +158,7 @@ private fun FailedImagePreview() = PreviewImageFeedback(ImageLoadStatus.FAILED, 
 private fun PreviewImageFeedback(status: ImageLoadStatus, darkTheme: Boolean = false) {
     FormPreviewTheme(darkTheme = darkTheme) {
         Surface {
-            Box(Modifier.size(320.dp, 180.dp), contentAlignment = Alignment.Center) { ImageFeedback(status, {}) }
+            Box(Modifier.size(320.dp, 180.dp), contentAlignment = Alignment.Center) { ImageFeedback(status) {} }
         }
     }
 }
