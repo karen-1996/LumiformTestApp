@@ -2,84 +2,63 @@ package com.lumiformtest.form.presentation.screens
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
-import com.lumiformtest.design.theme.LumiformTestAppTheme
-import com.lumiformtest.form.presentation.model.ChoiceWriteFailureUi
 import com.lumiformtest.form.presentation.model.ChoiceWriteFailureReasonUi
-import com.lumiformtest.form.presentation.model.FormContentUiModel
+import com.lumiformtest.form.presentation.model.ChoiceWriteFailureUi
 import com.lumiformtest.form.presentation.model.FormRefreshFailureUi
 import com.lumiformtest.form.presentation.model.FormRowUiModel
-import com.lumiformtest.form.presentation.model.ResponseOptionUiModel
-import com.lumiformtest.form.presentation.model.ResponseSetUiModel
+import com.lumiformtest.form.presentation.preview.FormPreviewData
+import com.lumiformtest.form.presentation.preview.FormPreviewTheme
 import com.lumiformtest.form.presentation.viewmodel.FormUiState
 
-private val PreviewContent by lazy {
-    FormContentUiModel(
-        rows = listOf(
-            FormRowUiModel.Page(1, "Main page"),
-            FormRowUiModel.Section(2, 1, 1, "Introduction"),
-            FormRowUiModel.Text(3, 2, 2, "Welcome to the main page."),
-            FormRowUiModel.Image(4, 2, 2, "Welcome image", "https://example.com/image.png"),
-            FormRowUiModel.Section(5, 2, 2, "Inspection"),
-            FormRowUiModel.Choice(
-                6, 5, 3, "Which areas were inspected?",
-                ResponseSetUiModel(101, true, listOf(
-                    ResponseOptionUiModel(1, "Entrance", null), ResponseOptionUiModel(2, "Storage", null)
-                ))
-            )
-        ),
-        lastUpdatedEpochMillis = 1793275200000
-    )
-}
-
-@Preview(showBackground = true)
+@Preview(name = "Form content", showBackground = true)
 @Composable
-private fun ContentPreview() = PreviewForm(FormUiState(content = PreviewContent, isReadingCache = false))
+private fun ContentPreview() = PreviewForm(FormUiState(content = FormPreviewData.content, isReadingCache = false))
 
-@Preview(showBackground = true)
+@Preview(name = "Form loading", showBackground = true)
 @Composable
 private fun LoadingPreview() = PreviewForm(FormUiState())
 
-@Preview(showBackground = true)
+@Preview(name = "Empty form", showBackground = true)
 @Composable
-private fun EmptyPreview() = PreviewForm(FormUiState(content = PreviewContent.copy(rows = emptyList()), isReadingCache = false))
+private fun EmptyPreview() = PreviewForm(FormUiState(content = FormPreviewData.content.copy(rows = emptyList()), isReadingCache = false))
 
-@Preview(showBackground = true)
+@Preview(name = "Initial form failure", showBackground = true)
 @Composable
 private fun ErrorPreview() = PreviewForm(FormUiState(isReadingCache = false, refreshFailure = FormRefreshFailureUi.FETCH))
 
-@Preview(showBackground = true)
+@Preview(name = "Cached form · failed refresh", showBackground = true)
 @Composable
 private fun CachedFailurePreview() = PreviewForm(FormUiState(
-    content = PreviewContent, isReadingCache = false, refreshFailure = FormRefreshFailureUi.FETCH
+    content = FormPreviewData.content, isReadingCache = false, refreshFailure = FormRefreshFailureUi.FETCH
 ))
 
-@Preview(showBackground = true)
+@Preview(name = "Single answer", showBackground = true)
 @Composable
 private fun SingleAnswerPreview() = PreviewForm(FormUiState(
-    content = PreviewContent.copy(rows = PreviewContent.rows.map {
+    content = FormPreviewData.content.copy(rows = FormPreviewData.content.rows.map {
         if (it is FormRowUiModel.Choice) it.copy(responseSet = it.responseSet.copy(allowsMultipleSelection = false), selectedOptionIds = setOf(1)) else it
     }), isReadingCache = false
 ))
 
-@Preview(showBackground = true)
+@Preview(name = "Multiple answers", showBackground = true)
 @Composable
 private fun MultipleAnswersPreview() = PreviewForm(FormUiState(
-    content = PreviewContent.copy(rows = PreviewContent.rows.map {
+    content = FormPreviewData.content.copy(rows = FormPreviewData.content.rows.map {
         if (it is FormRowUiModel.Choice) it.copy(selectedOptionIds = setOf(1, 2)) else it
     }), isReadingCache = false
 ))
 
-@Preview(showBackground = true)
+@Preview(name = "Answer save error", showBackground = true)
 @Composable
 private fun SaveFailurePreview() = PreviewForm(FormUiState(
-    content = PreviewContent, isReadingCache = false,
+    content = FormPreviewData.content, isReadingCache = false,
     choiceWriteFailure = ChoiceWriteFailureUi(1, 6, ChoiceWriteFailureReasonUi.STORAGE)
 ))
 
-@Preview(showBackground = true, widthDp = 320, fontScale = 2f)
+@Preview(name = "Deep nesting · large text", showBackground = true, widthDp = 320, fontScale = 2f)
 @Composable
 private fun DeepHierarchyPreview() = PreviewForm(FormUiState(
-    content = PreviewContent.copy(rows = listOf(
+    content = FormPreviewData.content.copy(rows = listOf(
         FormRowUiModel.Page(1, "Main page"),
         FormRowUiModel.Section(2, 1, 8, "A deeply nested section with a longer title"),
         FormRowUiModel.Text(3, 2, 9, "This text keeps its width even when the section is deeply nested.")
@@ -88,7 +67,13 @@ private fun DeepHierarchyPreview() = PreviewForm(FormUiState(
 
 @Composable
 private fun PreviewForm(state: FormUiState, darkTheme: Boolean = false) {
-    LumiformTestAppTheme(darkTheme = darkTheme, dynamicColor = false) {
+    FormPreviewTheme(darkTheme = darkTheme) {
         FormScreen(state, onAction = {})
     }
 }
+
+@Preview(name = "Content · dark", showBackground = true)
+@Composable
+private fun DarkContentPreview() = PreviewForm(
+    FormUiState(content = FormPreviewData.content, isReadingCache = false), darkTheme = true
+)

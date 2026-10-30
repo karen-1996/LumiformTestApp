@@ -13,7 +13,10 @@ description: Change Compose screens, state-driven UI, themes, previews, or acces
 - Use null descriptions for decorative images and useful labels for controls.
 - Respect Scaffold and system-bar insets. Check text wrapping, font scaling, and small-screen layout when changing visual content.
 - Put reusable components in component files. Do not add composable extension functions to screen files.
-- Keep previews independent of Hilt, network access, and databases.
+- Provide a named @Preview for every screen and visual component, including private visual building blocks. Keep it in the same file or a nearby *Previews.kt file and wrap it in the app theme.
+- Show meaningful states where relevant: content, loading, failure, selection, disabled controls, and long text. Include dark/small-width/large-font cases when useful.
+- Share sample UI fixtures and local drawable assets. Keep previews independent of Hilt, network access, image-loader initialization, and databases.
+- Preview route/navigation wiring through its stateless screen content. Non-visual state/resource helpers and preview wrappers do not need standalone UI previews.
 - Keep lazy item keys based on validated node IDs and content types based on row structure. Key response options by response-set/option IDs so reordered definitions retain the correct focus and state.
 - Limit item captures to row inputs and shared callbacks. Reuse unchanged rows from mapping and verify skippability with compiler reports before adding stability annotations.
 - Prepare the lazy image loader off the UI thread and share its State at the form entry. Read that State only in image consumers so returning rows reuse the prepared loader immediately.

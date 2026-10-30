@@ -22,7 +22,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.lumiformtest.form.presentation.components.FormImage
 import com.lumiformtest.form.presentation.model.ImageUiModel
-import com.lumiformtest.design.theme.LumiformTestAppTheme
+import com.lumiformtest.form.presentation.preview.FormPreviewTheme
 import com.lumiformtest.form.presentation.viewmodel.ImageUiState
 import com.lumiformtest.resources.R
 
@@ -62,11 +62,33 @@ internal fun ImageScreen(state: ImageUiState, onBack: () -> Unit, onRetry: () ->
 @Preview(name = "Image missing", showBackground = true)
 @Composable
 private fun ImageScreenMissingPreview() {
-    LumiformTestAppTheme(dynamicColor = false) { ImageScreen(ImageUiState(isLoading = false), {}, {}) }
+    FormPreviewTheme() { ImageScreen(ImageUiState(isLoading = false), {}, {}) }
 }
 
 @Preview(name = "Saved image read failed", showBackground = true)
 @Composable
 private fun ImageScreenReadFailurePreview() {
-    LumiformTestAppTheme(dynamicColor = false) { ImageScreen(ImageUiState(isLoading = false, hasReadFailure = true), {}, {}) }
+    FormPreviewTheme() { ImageScreen(ImageUiState(isLoading = false, hasReadFailure = true), {}, {}) }
+}
+
+@Preview(name = "Image content", showBackground = true)
+@Composable
+private fun ImageScreenContentPreview() {
+    FormPreviewTheme() {
+        ImageScreen(ImageUiState(ImageUiModel(4, "Welcome image", "preview://image"), isLoading = false), {}, {})
+    }
+}
+
+@Preview(name = "Image loading", showBackground = true)
+@Composable
+private fun ImageScreenLoadingPreview() {
+    FormPreviewTheme() { ImageScreen(ImageUiState(), {}, {}) }
+}
+
+@Preview(name = "Long title · dark", showBackground = true, widthDp = 320, fontScale = 1.5f)
+@Composable
+private fun ImageScreenLongTitlePreview() {
+    FormPreviewTheme(darkTheme = true) {
+        ImageScreen(ImageUiState(ImageUiModel(4, "An inspection image with a longer title that should stay readable", "preview://image"), isLoading = false), {}, {})
+    }
 }

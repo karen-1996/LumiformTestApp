@@ -10,6 +10,7 @@ They are project-scoped guidance; the user's current instructions take priority.
 - Preserve the custom MVI with one action handler for state changes and side effects.
 - Prefer lazy initialization wherever it safely defers object creation, following ASA. Use `by lazy` for reusable Kotlin properties, Dagger `Lazy` for conditional injected dependencies, and `remember` for Compose-owned values. Preserve required lifecycle/configuration timing and avoid initializing unused resources during cleanup.
 - Keep comments short and natural. Explain why a choice was made, without repeating the code.
+- Provide a named Compose preview for every screen and visual component. Use sample UI models and local assets; preview stateless content instead of Hilt routes, and keep previews independent of network and storage.
 - Keep changes small enough to review. Do not commit or push until the user reviews and explicitly approves the changes.
 - Run checks appropriate to the change and report their actual results and limits.
 

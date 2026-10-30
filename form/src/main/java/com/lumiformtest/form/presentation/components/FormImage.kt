@@ -36,6 +36,7 @@ import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.size.Precision
 import coil3.size.Scale
+import com.lumiformtest.form.presentation.preview.FormPreviewTheme
 import com.lumiformtest.resources.R
 
 @Composable
@@ -104,3 +105,38 @@ private fun ImageFeedback(status: ImageLoadStatus, onRetry: () -> Unit) {
 }
 
 private enum class ImageLoadStatus { LOADING, READY, FAILED }
+
+@Preview(name = "Thumbnail", showBackground = true)
+@Composable
+private fun ThumbnailPreview() {
+    FormPreviewTheme() {
+        Surface(shape = MaterialTheme.shapes.medium) {
+            FormImage("preview://image", null, Modifier.size(320.dp, 180.dp), contentScale = ContentScale.Crop, isThumbnail = true)
+        }
+    }
+}
+
+@Preview(name = "Viewer image", showBackground = true)
+@Composable
+private fun ViewerImagePreview() {
+    FormPreviewTheme() {
+        FormImage("preview://image", "Welcome image", Modifier.size(320.dp, 420.dp))
+    }
+}
+
+@Preview(name = "Image loading", showBackground = true)
+@Composable
+private fun LoadingImagePreview() = PreviewImageFeedback(ImageLoadStatus.LOADING)
+
+@Preview(name = "Image failed · dark", showBackground = true)
+@Composable
+private fun FailedImagePreview() = PreviewImageFeedback(ImageLoadStatus.FAILED, darkTheme = true)
+
+@Composable
+private fun PreviewImageFeedback(status: ImageLoadStatus, darkTheme: Boolean = false) {
+    FormPreviewTheme(darkTheme = darkTheme) {
+        Surface {
+            Box(Modifier.size(320.dp, 180.dp), contentAlignment = Alignment.Center) { ImageFeedback(status, {}) }
+        }
+    }
+}

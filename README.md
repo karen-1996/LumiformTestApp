@@ -324,6 +324,17 @@ viewer. Back restored the exact scrolled form position. The open viewer also
 returned from Recents after the background app process was killed, while still
 offline. These are manual emulator checks, separate from saved-state UI tests.
 
+## Compose previews
+
+Each screen and visual component has named, themed previews beside its code.
+They cover content, loading/failure, selected/disabled choices, dark mode, and
+long text where relevant. Screen previews use sample UI models instead of Hilt
+routes. Shared fixtures live in
+[FormPreviewData.kt](form/src/main/java/com/lumiformtest/form/presentation/preview/FormPreviewData.kt).
+Image previews use a local drawable and never create the image loader or make
+network/database calls. Preview wrappers and non-visual state helpers are covered
+through their screen/component previews.
+
 ## AI development guidance
 
 [aidev](aidev/README.md) contains the project skills and how they are used.

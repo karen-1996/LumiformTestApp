@@ -27,6 +27,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.lumiformtest.form.presentation.model.ChoiceOptionUiInput
 import com.lumiformtest.form.presentation.model.FormRowUiModel
+import com.lumiformtest.form.presentation.preview.FormPreviewData
+import com.lumiformtest.form.presentation.preview.FormPreviewTheme
 import com.lumiformtest.resources.R
 
 @Composable
@@ -74,5 +76,52 @@ private fun ChoiceOptionRow(
         if (multiple) Checkbox(checked = selected, onCheckedChange = null, enabled = enabled)
         else RadioButton(selected = selected, onClick = null, enabled = enabled)
         Text(label, Modifier.weight(1f).padding(start = 8.dp), style = MaterialTheme.typography.bodyMedium)
+    }
+}
+
+@Preview(name = "Single-choice question", showBackground = true)
+@Composable
+private fun SingleQuestionPreview() = PreviewQuestion(FormPreviewData.singleChoice)
+
+@Preview(name = "Multiple-choice question · dark", showBackground = true)
+@Composable
+private fun MultipleQuestionPreview() = PreviewQuestion(FormPreviewData.multipleChoice, darkTheme = true)
+
+@Preview(name = "Disabled question", showBackground = true)
+@Composable
+private fun DisabledQuestionPreview() = PreviewQuestion(FormPreviewData.singleChoice, enabled = false)
+
+@Composable
+private fun PreviewQuestion(question: FormRowUiModel.Choice, enabled: Boolean = true, darkTheme: Boolean = false) {
+    FormPreviewTheme(darkTheme = darkTheme) {
+        Surface {
+            Box(Modifier.width(320.dp).padding(16.dp)) { ChoiceQuestion(question, enabled, {}) }
+        }
+    }
+}
+
+@Preview(name = "Radio option", showBackground = true)
+@Composable
+private fun RadioOptionPreview() {
+    FormPreviewTheme() {
+        Surface {
+            ChoiceOptionRow(
+                label = "Equipment checks", input = ChoiceOptionUiInput(6, 101, 1),
+                multiple = false, selected = true, enabled = true, onOptionClick = {}
+            )
+        }
+    }
+}
+
+@Preview(name = "Checkbox option · large text", showBackground = true, widthDp = 320, fontScale = 1.5f)
+@Composable
+private fun CheckboxOptionPreview() {
+    FormPreviewTheme(darkTheme = true) {
+        Surface {
+            ChoiceOptionRow(
+                label = "Entrance and storage area", input = ChoiceOptionUiInput(6, 101, 1),
+                multiple = true, selected = true, enabled = true, onOptionClick = {}
+            )
+        }
     }
 }
