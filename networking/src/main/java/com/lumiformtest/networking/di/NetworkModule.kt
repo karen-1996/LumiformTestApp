@@ -9,7 +9,7 @@ import dagger.hilt.components.SingletonComponent
 import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
+import com.lumiformtest.networking.NetworkLoggingInterceptor
 import retrofit2.Retrofit
 
 @Module
@@ -17,15 +17,13 @@ import retrofit2.Retrofit
 internal object NetworkModule {
     @Provides
     @Singleton
-    fun loggingInterceptor(): HttpLoggingInterceptor = HttpLoggingInterceptor().apply {
-        level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY else HttpLoggingInterceptor.Level.NONE
-    }
+    fun loggingInterceptor(): NetworkLoggingInterceptor = NetworkLoggingInterceptor()
 
     @Provides
     @Singleton
-    fun client(loggingInterceptor: Lazy<HttpLoggingInterceptor>): OkHttpClient = OkHttpClient.Builder()
+    fun client(loggingInterceptor: Lazy<NetworkLoggingInterceptor>): OkHttpClient = OkHttpClient.Builder()
         .apply {
-            // Request and response bodies are only logged in debug builds.
+            // Debug logs form bodies and image headers. Release creates no logger.
             if (BuildConfig.DEBUG) addInterceptor(loggingInterceptor.get())
         }
         .connectTimeout(10, TimeUnit.SECONDS)

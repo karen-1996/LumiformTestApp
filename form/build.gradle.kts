@@ -26,6 +26,7 @@ dependencies {
     implementation(project(":design"))
     implementation(project(":networking"))
     implementation(project(":resources"))
+    implementation(libs.coil.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.ui.tooling.preview)

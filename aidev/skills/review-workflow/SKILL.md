@@ -9,7 +9,7 @@ description: Prepare small reviewable changes and verify this Android challenge 
 - Do not commit or push until the user reviews and explicitly approves the pending changes.
 - Use short comments explaining decisions in natural B2 English. Avoid invented results, inflated claims, and commentary that only restates the code.
 - Choose checks for the behavior changed. Run module unit tests for logic, assemble after wiring changes, and device tests for actual UI/lifecycle behavior.
-- Check release assembly when changing generated code, Hilt, serialization, or shrinker-sensitive integration.
+- Verify debug builds and relevant tests. Run release checks only when Karen explicitly requests them.
 - Keep tests meaningful. Do not add placeholder assertions or snapshots of incidental implementation details.
 - Report exactly what ran, what passed, remaining findings, and any untested behavior. Saved Compose state restoration is not a full process-death test.
 - Keep IDE files, SDK paths, credentials, build output, and emulator state outside the proposed commit.

@@ -56,6 +56,7 @@ dependencies {
     implementation(project(":form"))
     implementation(project(":networking"))
     implementation(project(":resources"))
+    implementation(libs.coil.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.core.splashscreen)

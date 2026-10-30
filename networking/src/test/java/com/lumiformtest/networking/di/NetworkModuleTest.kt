@@ -7,7 +7,7 @@ import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
 import okhttp3.ResponseBody
 import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
+import com.lumiformtest.networking.NetworkLoggingInterceptor
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -20,7 +20,7 @@ class NetworkModuleTest {
     private val serverDelegate: Lazy<MockWebServer> = lazy { MockWebServer().apply { start() } }
     private val server: MockWebServer by serverDelegate
     private var loggingCreations = 0
-    private val logging: HttpLoggingInterceptor by lazy {
+    private val logging: NetworkLoggingInterceptor by lazy {
         loggingCreations++
         NetworkModule.loggingInterceptor()
     }
@@ -59,12 +59,9 @@ class NetworkModuleTest {
     }
 
     @Test
-    fun `only debug clients create and install the body logger`() {
-        val interceptors = client.interceptors.filterIsInstance<HttpLoggingInterceptor>()
-        assertEquals(
-            if (BuildConfig.DEBUG) listOf(HttpLoggingInterceptor.Level.BODY) else emptyList(),
-            interceptors.map { it.level }
-        )
+    fun `only debug clients create and install request logging`() {
+        val interceptors = client.interceptors.filterIsInstance<NetworkLoggingInterceptor>()
+        assertEquals(if (BuildConfig.DEBUG) 1 else 0, interceptors.size)
         assertEquals(if (BuildConfig.DEBUG) 1 else 0, loggingCreations)
     }
 
