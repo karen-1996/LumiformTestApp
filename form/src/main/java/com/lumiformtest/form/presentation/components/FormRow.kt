@@ -14,6 +14,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
@@ -39,11 +40,13 @@ internal fun FormRow(
         when (row) {
             is FormRowUiModel.Page -> Text(
                 row.title, modifier = Modifier.padding(top = 12.dp).semantics { heading() },
-                style = MaterialTheme.typography.headlineMedium
+                style = MaterialTheme.typography.headlineMedium,
+                color = colorResource(R.color.form_page_heading)
             )
             is FormRowUiModel.Section -> Text(
                 row.title, modifier = Modifier.padding(top = 8.dp).semantics { heading() },
-                style = if (row.depth == 1) MaterialTheme.typography.titleLarge else MaterialTheme.typography.titleMedium
+                style = if (row.depth == 1) MaterialTheme.typography.titleLarge else MaterialTheme.typography.titleMedium,
+                color = colorResource(R.color.form_section_heading)
             )
             is FormRowUiModel.Text -> Text(row.text, style = MaterialTheme.typography.bodyMedium)
             is FormRowUiModel.Image -> {

@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="app_background">#141218</color>
+    <color name="app_background">@color/app_background_dark</color>
+    <color name="form_page_heading">#E78D69</color>
+    <color name="form_section_heading">#79C4A5</color>
 </resources>

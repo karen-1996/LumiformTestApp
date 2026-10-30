@@ -30,9 +30,16 @@ The app follows the device's light/dark setting. Compose uses Material 3 dynamic
 colors on Android 12+, with light/dark fallback palettes on older versions.
 The native window and splash also have matching night resources and system-bar
 icon settings; both Activities use AndroidX edge-to-edge handling.
+Both screens and their top bars use a neutral gray surface in light and dark mode;
+the native window and splash share the same background.
 Dynamic palettes are remembered with configuration keys, so night mode and
 resource-color changes refresh them. The light image canvas keeps transparent
 black artwork readable in either mode.
+
+Page titles use coral and section headings use green, inspired by the challenge's
+example. Shared day/night resources keep these hierarchy colors readable in both
+themes, including when the device supplies dynamic Material colors. Question text
+keeps the theme's neutral foreground; size and indentation also show the hierarchy.
 
 ## Structure
 

@@ -13,6 +13,7 @@ android {
 }
 
 dependencies {
+    implementation(project(":resources"))
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.material3)
 }

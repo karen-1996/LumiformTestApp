@@ -16,9 +16,17 @@ import com.lumiformtest.form.presentation.preview.FormPreviewTheme
 @Composable
 private fun PageRowPreview() = PreviewRow(FormRowUiModel.Page(1, "Main page"))
 
+@Preview(name = "Page · dark", showBackground = true)
+@Composable
+private fun DarkPageRowPreview() = PreviewRow(FormRowUiModel.Page(1, "Main page"), darkTheme = true)
+
 @Preview(name = "Nested section", showBackground = true)
 @Composable
 private fun SectionRowPreview() = PreviewRow(FormRowUiModel.Section(2, 1, 3, "Safety inspection"))
+
+@Preview(name = "Nested section · dark", showBackground = true)
+@Composable
+private fun DarkSectionRowPreview() = PreviewRow(FormRowUiModel.Section(2, 1, 3, "Safety inspection"), darkTheme = true)
 
 @Preview(name = "Text", showBackground = true, widthDp = 320, fontScale = 1.5f)
 @Composable

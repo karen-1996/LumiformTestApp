@@ -76,7 +76,7 @@ class AppThemeTest {
 
     private fun verifyComposeMode(dynamic: Boolean) {
         var dark by mutableStateOf(false)
-        val observed = AtomicReference<Pair<ColorScheme, Color>>()
+        val observed = AtomicReference<Triple<ColorScheme, Color, List<Color>>>()
         compose.setContent {
             val base = LocalContext.current
             val configuration = remember(base, dark) { configuration(dark) }
@@ -85,7 +85,8 @@ class AppThemeTest {
                 LumiformTestAppTheme(dynamicColor = dynamic) {
                     val scheme = MaterialTheme.colorScheme
                     val windowBackground = colorResource(R.color.app_background)
-                    SideEffect { observed.set(scheme to windowBackground) }
+                    val headings = listOf(colorResource(R.color.form_page_heading), colorResource(R.color.form_section_heading))
+                    SideEffect { observed.set(Triple(scheme, windowBackground, headings)) }
                     Surface(Modifier.fillMaxSize()) { Box(Modifier.fillMaxSize()) }
                 }
             }
@@ -102,13 +103,15 @@ class AppThemeTest {
         assertEquals(light.background, observed.get().first.background)
     }
 
-    private fun verifyPalette(value: Pair<ColorScheme, Color>, dark: Boolean, dynamic: Boolean) {
-        val (scheme, windowBackground) = value
+    private fun verifyPalette(value: Triple<ColorScheme, Color, List<Color>>, dark: Boolean, dynamic: Boolean) {
+        val (scheme, windowBackground, headings) = value
         assertTrue(if (dark) scheme.background.luminance() < 0.2f else scheme.background.luminance() > 0.7f)
-        val foreground = scheme.onSurface.luminance()
-        val surface = scheme.surface.luminance()
-        val contrast = (maxOf(foreground, surface) + 0.05f) / (minOf(foreground, surface) + 0.05f)
-        assertTrue("Body text should stay readable in either mode", contrast >= 4.5f)
+        for (color in listOf(scheme.onSurface) + headings) {
+            val foreground = color.luminance()
+            val surface = scheme.background.luminance()
+            val contrast = (maxOf(foreground, surface) + 0.05f) / (minOf(foreground, surface) + 0.05f)
+            assertTrue("Body and heading text should stay readable in either mode", contrast >= 4.5f)
+        }
         if (!dynamic) assertEquals(windowBackground.toArgb(), scheme.background.toArgb())
     }
 
