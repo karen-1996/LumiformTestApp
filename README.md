@@ -209,13 +209,28 @@ size-aware rendering, and a bounded memory cache. The Application supplies one
 Hilt-backed ImageLoader through Coil's lazy singleton factory. Its first creation
 runs on IO, with a fixed-size placeholder while preparing, so dependency setup
 does not block the UI thread. Preparation is shared by the form entry, so rows
-returning to the viewport get the prepared loader immediately. Thumbnails crop
-to a fixed height and decode at most 512 pixels on the longest edge, without enlarging
-small originals. Separate thumbnail/viewer memory keys keep a large viewer bitmap
-out of the scrolling list. The viewer fits the whole image and keeps its title visible.
+returning to the viewport get the prepared loader immediately. Thumbnails fit the
+whole image inside a compact 120 dp square and decode at most 512 pixels on the
+longest edge, without enlarging small originals. Separate thumbnail/viewer memory
+keys keep a large viewer bitmap out of the scrolling list. The viewer fits the
+whole image and keeps its title visible.
 A shared light canvas keeps transparent black artwork readable in dark mode.
 Loading and retry states belong to the image component; they do not block form
 content or reset answers.
+
+The image expands from its thumbnail into the viewer with a 350 ms shared-element
+transition, and shrinks back on Back. The shared key uses the node ID, so separate
+questions using the same URL do not animate into each other. Navigation still
+carries only the image ID. The same image layout stays in place while its bounds
+and corner shape animate together. A loaded bitmap stays visible during motion;
+the larger original is decoded afterward, with the thumbnail covering the handoff.
+Back uses the cached viewer bitmap when available.
+
+A temporary UI preview carries the clicked image metadata and prepared loader
+into the viewer, so reading Room does not insert a loading screen into the motion.
+Saved observations remain authoritative, including missing images and read errors.
+The preview is not saved in navigation state; restored entries resolve from Room.
+Standalone screens and previews also work without a transition scope.
 
 Coil's HTTP fetcher is replaced with a small retained-file fetcher. The feature's
 ImageApi uses the shared Retrofit/OkHttp instance from :networking. Image requests send Accept: image/* so debug logging records only headers and
@@ -319,6 +334,10 @@ check radio/checkbox semantics, one action per whole-row tap, failure messages,
 control availability, and long labels with large fonts. Image UI tests cover
 thumbnail navigation, missing/read-error states, failure-to-success retry, actual
 thumbnail bitmap bounds/cache separation, and non-blocking first loader creation.
+Clock-controlled checks verify expansion/shrink bounds, intermediate corner shapes,
+and return to the thumbnail's position. A real Coil test delays saved metadata and
+the original image, checking that the loaded thumbnail stays visible through the
+animation and decoder handoff, while saved read errors still take priority.
 List tests check anchor retention when rows above it are inserted/removed and
 focus/selection identity when response options reorder.
 A real Coil pipeline test loads a thumbnail, closes its loader, and uses a new

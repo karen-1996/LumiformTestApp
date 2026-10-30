@@ -13,30 +13,41 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.lumiformtest.form.presentation.components.LocalFormImageLoader
 import com.lumiformtest.form.presentation.components.rememberImageLoaderState
 import com.lumiformtest.form.presentation.model.FormRowUiModel
+import com.lumiformtest.form.presentation.navigation.FormImageTransitionState
 import com.lumiformtest.form.presentation.viewmodel.FormNavigationDestination
 import com.lumiformtest.form.presentation.viewmodel.FormViewModel
 
 @Composable
 internal fun FormRoute(
     onOpenImage: (Long) -> Unit,
+    imageTransitionState: FormImageTransitionState,
     viewModel: FormViewModel = hiltViewModel()
 ) {
     val state by viewModel.viewState.collectAsStateWithLifecycle()
     val lifecycleOwner = LocalLifecycleOwner.current
     val openImage by rememberUpdatedState(onOpenImage)
+    val latestContent by rememberUpdatedState(state.content)
+    val preparedLoader = imageTransitionState.preview?.loader
+    val loader = if (state.content?.rows?.any { it is FormRowUiModel.Image } == true) {
+        if (preparedLoader != null) rememberUpdatedState(preparedLoader) else rememberImageLoaderState()
+    } else null
+    val latestLoader by rememberUpdatedState(loader)
 
     LaunchedEffect(viewModel, lifecycleOwner) {
         lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
             viewModel.navigateFlow.collect { destination ->
                 when (destination) {
-                    is FormNavigationDestination.OpenImage -> openImage(destination.imageId)
+                    is FormNavigationDestination.OpenImage -> {
+                        val row = latestContent?.rows?.firstOrNull { it.id == destination.imageId } as? FormRowUiModel.Image
+                        imageTransitionState.prepare(row, latestLoader?.value)
+                        openImage(destination.imageId)
+                    }
                 }
             }
         }
     }
 
     // Keep preparation owned by the entry, so returning rows already have their loader.
-    val loader = if (state.content?.rows?.any { it is FormRowUiModel.Image } == true) rememberImageLoaderState() else null
     CompositionLocalProvider(LocalFormImageLoader provides loader) {
         FormScreen(state = state, onAction = { viewModel.sendAction(it) })
     }

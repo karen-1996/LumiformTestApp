@@ -36,10 +36,6 @@ internal fun ChoiceQuestion(question: FormRowUiModel.Choice, enabled: Boolean, o
     val multiple = question.responseSet.allowsMultipleSelection
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(question.text, style = MaterialTheme.typography.bodyMedium)
-        Text(
-            stringResource(if (multiple) R.string.form_multiple_choice else R.string.form_single_choice),
-            style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
         Column(if (multiple) Modifier else Modifier.selectableGroup()) {
             question.responseSet.options.forEach { option ->
                 key(question.responseSet.id, option.id) {
@@ -50,6 +46,10 @@ internal fun ChoiceQuestion(question: FormRowUiModel.Choice, enabled: Boolean, o
                 }
             }
         }
+        Text(
+            stringResource(if (multiple) R.string.form_multiple_choice else R.string.form_single_choice),
+            style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 

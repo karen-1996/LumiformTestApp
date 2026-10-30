@@ -1,7 +1,7 @@
 package com.lumiformtest.form.presentation.components
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.Role
@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -22,6 +21,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.lumiformtest.form.presentation.model.FormRowUiModel
 import com.lumiformtest.form.presentation.model.ChoiceOptionUiInput
+import com.lumiformtest.form.presentation.navigation.sharedImageModifier
 import com.lumiformtest.resources.R
 
 @Composable
@@ -50,19 +50,17 @@ internal fun FormRow(
             )
             is FormRowUiModel.Text -> Text(row.text, style = MaterialTheme.typography.bodyMedium)
             is FormRowUiModel.Image -> {
-                Text(row.title, style = MaterialTheme.typography.bodyMedium)
                 val openLabel = stringResource(R.string.image_open, row.title)
-                Surface(shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.surfaceContainer) {
-                    FormImage(
-                        url = row.imageUrl,
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        isThumbnail = true,
-                        modifier = Modifier.fillMaxWidth().height(180.dp)
-                            .clickable(role = Role.Button, onClickLabel = openLabel) { onImageClick(row.id) }
-                            .semantics { contentDescription = openLabel }.testTag("image_thumbnail_${row.id}")
-                    )
-                }
+                FormImage(
+                    url = row.imageUrl,
+                    contentDescription = null,
+                    contentScale = ContentScale.Fit,
+                    isThumbnail = true,
+                    modifier = Modifier.sharedImageModifier(row.id, isThumbnail = true).size(120.dp)
+                        .clickable(role = Role.Button, onClickLabel = openLabel) { onImageClick(row.id) }
+                        .semantics { contentDescription = openLabel }.testTag("image_thumbnail_${row.id}")
+                )
+                Text(row.title, style = MaterialTheme.typography.bodyMedium)
             }
             is FormRowUiModel.Choice -> ChoiceQuestion(row, choicesEnabled, onChoiceClick)
         }

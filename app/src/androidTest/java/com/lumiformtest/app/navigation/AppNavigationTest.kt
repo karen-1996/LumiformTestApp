@@ -5,6 +5,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
@@ -49,7 +50,7 @@ class AppNavigationTest {
             assertEquals(FormDestination.Image(imageId = Long.MAX_VALUE), backStack.last())
         }
         compose.onNodeWithText(imageUnavailable).assertIsDisplayed()
-        compose.onNodeWithText(back).performClick()
+        compose.onNodeWithContentDescription(back).performClick()
         compose.onNodeWithText(formTitle).assertIsDisplayed()
         compose.runOnIdle { assertEquals(listOf(FormDestination.Form), backStack.toList()) }
     }

@@ -7,8 +7,12 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -22,6 +26,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.lumiformtest.form.presentation.components.FormImage
 import com.lumiformtest.form.presentation.model.ImageUiModel
+import com.lumiformtest.form.presentation.navigation.sharedImageModifier
 import com.lumiformtest.form.presentation.preview.FormPreviewTheme
 import com.lumiformtest.form.presentation.viewmodel.ImageUiState
 import com.lumiformtest.resources.R
@@ -34,7 +39,11 @@ internal fun ImageScreen(state: ImageUiState, onBack: () -> Unit, onRetry: () ->
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.image_title)) },
-                navigationIcon = { TextButton(onClick = onBack) { Text(stringResource(R.string.back)) } }
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
+                    }
+                }
             )
         }
     ) { innerPadding ->
@@ -50,8 +59,10 @@ internal fun ImageScreen(state: ImageUiState, onBack: () -> Unit, onRetry: () ->
                         Text(stringResource(R.string.image_read_error))
                         TextButton(onClick = onRetry, enabled = !state.isLoading) { Text(stringResource(R.string.form_retry)) }
                     }
+                    state.image != null -> FormImage(
+                        state.image.url, state.image.title, Modifier.sharedImageModifier(state.image.id).fillMaxSize()
+                    )
                     state.isLoading -> CircularProgressIndicator()
-                    state.image != null -> FormImage(state.image.url, state.image.title, Modifier.fillMaxSize())
                     else -> Text(stringResource(R.string.image_unavailable))
                 }
             }

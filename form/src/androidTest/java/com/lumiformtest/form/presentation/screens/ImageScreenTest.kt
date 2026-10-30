@@ -20,6 +20,7 @@ import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -74,7 +75,7 @@ class ImageScreenTest {
         compose.setContent { LumiformTestAppTheme { ImageScreen(ImageUiState(isLoading = false), { backs++ }, {}) } }
         compose.onNodeWithText(compose.activity.getString(R.string.image_unavailable)).assertIsDisplayed()
         compose.onNodeWithText(compose.activity.getString(R.string.form_retry)).assertDoesNotExist()
-        compose.onNodeWithText(compose.activity.getString(R.string.back)).performClick()
+        compose.onNodeWithContentDescription(compose.activity.getString(R.string.back)).performClick()
         compose.runOnIdle { assertEquals(1, backs) }
     }
 
@@ -106,7 +107,7 @@ class ImageScreenTest {
         compose.onNodeWithText(title).assertIsDisplayed()
         compose.waitUntil(5_000) { compose.onAllNodesWithTag("image_content").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithTag("image_content").assertIsDisplayed()
-        compose.onNodeWithText(compose.activity.getString(R.string.back)).performClick()
+        compose.onNodeWithContentDescription(compose.activity.getString(R.string.back)).performClick()
         compose.runOnIdle { assertEquals(1, backs) }
     }
 

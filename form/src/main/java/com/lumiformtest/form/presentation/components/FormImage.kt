@@ -33,10 +33,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.ImageLoader
 import coil3.compose.AsyncImage
+import coil3.compose.asPainter
 import coil3.request.ImageRequest
 import coil3.size.Precision
 import coil3.size.Scale
 import com.lumiformtest.form.presentation.preview.FormPreviewTheme
+import com.lumiformtest.form.presentation.navigation.imageTransitionPreview
+import com.lumiformtest.form.presentation.navigation.movingImagePreview
 import com.lumiformtest.resources.R
 
 @Composable
@@ -58,34 +61,51 @@ internal fun FormImage(
         return
     }
     val context = LocalContext.current
-    val loader = rememberFormImageLoader(imageLoader)
+    val canvas = colorResource(R.color.image_canvas)
+    val thumbnail = imageTransitionPreview(url)?.thumbnail
+    val placeholder = remember(context, thumbnail) { thumbnail?.asPainter(context) }
+    val movingImage = movingImagePreview(url, isThumbnail)
+    val movingPainter = remember(context, movingImage) { movingImage?.asPainter(context) }
+    val loader = if (movingPainter == null) rememberFormImageLoader(imageLoader) else null
     val request = remember(context, url, isThumbnail) {
         ImageRequest.Builder(context).data(url)
             // A viewer bitmap should never become the list's thumbnail from memory cache.
             .memoryCacheKey("${if (isThumbnail) "thumbnail" else "viewer"}:$url")
             .apply {
                 if (isThumbnail) size(512).scale(Scale.FIT).precision(Precision.INEXACT)
+                // Keep the thumbnail visible until the original is decoded.
+                else placeholderMemoryCacheKey("thumbnail:$url")
             }
             .build()
     }
     var attempt by rememberSaveable(url) { mutableIntStateOf(0) }
     key(url, attempt) {
-        var status by remember { mutableStateOf(ImageLoadStatus.LOADING) }
-        Box(modifier, contentAlignment = Alignment.Center) {
-            if (loader != null) AsyncImage(
-                model = request,
-                imageLoader = loader,
-                contentDescription = contentDescription,
-                contentScale = contentScale,
-                // Transparent black artwork should also stay readable in dark mode.
-                modifier = Modifier.fillMaxSize().then(
-                    if (status == ImageLoadStatus.READY) Modifier.background(colorResource(R.color.image_canvas)) else Modifier
-                ).testTag("image_content"),
-                onLoading = { status = ImageLoadStatus.LOADING },
-                onSuccess = { status = ImageLoadStatus.READY },
-                onError = { status = ImageLoadStatus.FAILED }
-            )
-            ImageFeedback(status, onRetry = { attempt++ })
+        var status by remember(movingPainter != null) {
+            mutableStateOf(if (placeholder != null) ImageLoadStatus.PLACEHOLDER else ImageLoadStatus.LOADING)
+        }
+        val background = if (status == ImageLoadStatus.FAILED) MaterialTheme.colorScheme.surfaceContainer else canvas
+        Box(modifier.background(background), contentAlignment = Alignment.Center) {
+            if (movingPainter != null) {
+                // Keep one loaded image and one layout node throughout the movement.
+                Image(movingPainter, contentDescription, Modifier.fillMaxSize().testTag("image_content"), contentScale = contentScale)
+            } else {
+                // Cover even Coil's first empty frame when handing over to the original.
+                if (placeholder != null && status != ImageLoadStatus.READY && status != ImageLoadStatus.FAILED) {
+                    Image(placeholder, null, Modifier.fillMaxSize(), contentScale = contentScale)
+                }
+                if (loader != null) AsyncImage(
+                    model = request,
+                    imageLoader = loader,
+                    contentDescription = contentDescription,
+                    contentScale = contentScale,
+                    placeholder = placeholder,
+                    modifier = Modifier.fillMaxSize().testTag("image_content"),
+                    onLoading = { status = if (it.painter != null) ImageLoadStatus.PLACEHOLDER else ImageLoadStatus.LOADING },
+                    onSuccess = { status = ImageLoadStatus.READY },
+                    onError = { status = ImageLoadStatus.FAILED }
+                )
+                ImageFeedback(status, onRetry = { attempt++ })
+            }
         }
     }
 }
@@ -100,18 +120,18 @@ private fun ImageFeedback(status: ImageLoadStatus, onRetry: () -> Unit) {
             Text(stringResource(R.string.image_load_error), style = MaterialTheme.typography.bodyMedium)
             TextButton(onClick = onRetry) { Text(stringResource(R.string.form_retry)) }
         }
-        ImageLoadStatus.READY -> Unit
+        ImageLoadStatus.READY, ImageLoadStatus.PLACEHOLDER -> Unit
     }
 }
 
-private enum class ImageLoadStatus { LOADING, READY, FAILED }
+private enum class ImageLoadStatus { LOADING, PLACEHOLDER, READY, FAILED }
 
 @Preview(name = "Thumbnail", showBackground = true)
 @Composable
 private fun ThumbnailPreview() {
     FormPreviewTheme() {
         Surface(shape = MaterialTheme.shapes.medium) {
-            FormImage("preview://image", null, Modifier.size(320.dp, 180.dp), contentScale = ContentScale.Crop, isThumbnail = true)
+            FormImage("preview://image", null, Modifier.size(120.dp), isThumbnail = true)
         }
     }
 }
