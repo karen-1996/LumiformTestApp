@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
@@ -19,6 +20,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import com.lumiformtest.form.presentation.model.FormRowUiModel
 import com.lumiformtest.form.presentation.model.ChoiceOptionUiInput
 import com.lumiformtest.form.presentation.navigation.sharedImageModifier
@@ -29,27 +31,29 @@ internal fun FormRow(
     row: FormRowUiModel,
     choicesEnabled: Boolean,
     onImageClick: (Long) -> Unit,
-    onChoiceClick: (ChoiceOptionUiInput) -> Unit
+    onChoiceClick: (ChoiceOptionUiInput) -> Unit,
+    horizontalPadding: Dp = 0.dp
 ) {
     // Deep sections should still leave enough room for text on a small screen.
     val indentation = (row.depth - 1).coerceIn(0, 4) * 12
+    val contentPadding = PaddingValues(start = horizontalPadding + indentation.dp, end = horizontalPadding)
     Column(
-        modifier = Modifier.fillMaxWidth().padding(start = indentation.dp).testTag("form_row_${row.id}"),
+        modifier = Modifier.fillMaxWidth().testTag("form_row_${row.id}"),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         when (row) {
             is FormRowUiModel.Page -> Text(
-                row.title, modifier = Modifier.padding(top = 12.dp).semantics { heading() },
+                row.title, modifier = Modifier.padding(contentPadding).padding(top = 12.dp).semantics { heading() },
                 style = MaterialTheme.typography.headlineMedium,
                 color = colorResource(R.color.form_page_heading)
             )
             is FormRowUiModel.Section -> Text(
-                row.title, modifier = Modifier.padding(top = 8.dp).semantics { heading() },
+                row.title, modifier = Modifier.padding(contentPadding).padding(top = 8.dp).semantics { heading() },
                 style = if (row.depth == 1) MaterialTheme.typography.titleLarge else MaterialTheme.typography.titleMedium,
                 color = colorResource(R.color.form_section_heading)
             )
-            is FormRowUiModel.Text -> Text(row.text, style = MaterialTheme.typography.bodyMedium)
-            is FormRowUiModel.Image -> {
+            is FormRowUiModel.Text -> Text(row.text, modifier = Modifier.padding(contentPadding), style = MaterialTheme.typography.bodyMedium)
+            is FormRowUiModel.Image -> Column(Modifier.padding(contentPadding), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 val openLabel = stringResource(R.string.image_open, row.title)
                 FormImage(
                     url = row.imageUrl,
@@ -62,7 +66,7 @@ internal fun FormRow(
                 )
                 Text(row.title, style = MaterialTheme.typography.bodyMedium)
             }
-            is FormRowUiModel.Choice -> ChoiceQuestion(row, choicesEnabled, onChoiceClick)
+            is FormRowUiModel.Choice -> ChoiceQuestion(row, choicesEnabled, onChoiceClick, contentPadding)
         }
     }
 }

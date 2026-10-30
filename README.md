@@ -45,7 +45,7 @@ keeps the theme's neutral foreground; size and indentation also show the hierarc
 
 - `app`: application, splash launcher, MainActivity, root navigation, and app identity strings.
 - `base`: MVI contracts and `BaseCoroutineViewModel`.
-- `design`: shared Compose theme.
+- `design`: shared Compose theme and reusable UI components, including choice chips.
 - `networking`: shared OkHttp client, logging interceptor, and Retrofit instance.
 - `resources`: shared Android resource files, including UI strings, icons, XML themes,
   and backup configuration.
@@ -57,7 +57,9 @@ There are no separate data or domain Gradle modules.
 
 Shared Android `res/` files live in `resources/src/main/res`. Modules that use them
 depend directly on `:resources` and import `com.lumiformtest.resources.R`.
-I keep Compose theme code in `:design`, as in ASA.
+I keep Compose theme code and reusable UI components in `:design`, as in ASA.
+Shared components accept display values and callbacks; feature models and answer
+handling stay in `:form`.
 
 App identity strings, such as `app_name`, live separately in
 `app/src/main/res/values/strings_non_translatable.xml` and use `translatable="false"`.
@@ -134,8 +136,8 @@ downloaded originals live in app-owned files.
 
 ## Choice persistence
 
-Radio questions replace their previous answer and keep an already-selected option
-selected. Checkbox questions toggle independently. The DAO reads the current
+Single-choice questions replace their previous answer and keep an already-selected
+option selected. Multiple-choice options toggle independently. The DAO reads the current
 saved definition and applies each operation in one transaction. Answers belong
 to a question and response set; shared definitions do not share selected answers.
 Composite foreign keys reject options from a different set. A stale or removed
@@ -150,10 +152,19 @@ kept. Any failed replacement rolls back content, answers, and refresh time toget
 Selection writes never change the successful remote refresh timestamp.
 
 Choices remain usable during network refresh or a failed request. They are disabled
-while a saved-content read failure prevents reliable observation. Checked state
+while a saved-content read failure prevents reliable observation. Selected state
 comes from Room, with no optimistic update. Write failures stay in screen state and show a
 message while the screen is resumed; retry is another explicit tap, not an automatic
 replay of a toggle.
+
+Options use custom rounded chips from `:design` in a single horizontally scrolling
+row. Its viewport reaches both screen edges, while content padding keeps the first
+and last options aligned with the form. Labels stay on one line, and each response
+set retains its scroll position. Selected chips
+have a different fill and border, while radio/checkbox semantics keep the behavior clear
+for accessibility. Optional response scores appear as badges; no score is calculated.
+The footer lists saved selected labels, or "None selected", beside the choice type.
+Lists and score values follow the current locale.
 
 ## MVI
 
@@ -335,8 +346,9 @@ check readable text contrast and matching fallback window/background colors.
 Stateless form screen tests cover row kinds/headings, retry actions, cached content
 during refresh/failure, empty versus loading, saved list position, and long nested
 text at a large font scale in both themes on a small layout width. Choice tests
-check radio/checkbox semantics, one action per whole-row tap, failure messages,
-control availability, and long labels with large fonts. Image UI tests cover
+check radio/checkbox semantics, one action per chip tap, saved-selection summaries,
+horizontally scrolling chips, score badges, touch targets, failure messages, disabled controls, and long
+labels with large fonts. Image UI tests cover
 thumbnail navigation, missing/read-error states, failure-to-success retry, actual
 thumbnail bitmap bounds/cache separation, and non-blocking first loader creation.
 Clock-controlled checks verify expansion/shrink bounds, intermediate corner shapes,

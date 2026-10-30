@@ -18,7 +18,9 @@ internal object FormPreviewData {
     }
     val singleChoice by lazy {
         question.copy(text = "Which area needs attention?",
-            responseSet = question.responseSet.copy(allowsMultipleSelection = false), selectedOptionIds = setOf(1))
+            responseSet = question.responseSet.copy(allowsMultipleSelection = false, options = question.responseSet.options.map {
+                it.copy(score = when (it.id) { 1L -> 1; 2L -> 2; else -> null })
+            }), selectedOptionIds = setOf(1))
     }
     val multipleChoice by lazy { question.copy(selectedOptionIds = setOf(1, 3)) }
     val image by lazy { FormRowUiModel.Image(4, 2, 2, "Welcome image", "preview://image") }

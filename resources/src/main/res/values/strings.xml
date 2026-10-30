@@ -24,4 +24,8 @@
     <string name="choice_save_error">Couldn\'t save the answer. Please try again.</string>
     <string name="choice_unavailable">This option is no longer available. Please check the updated form.</string>
     <string name="choice_read_unavailable">Couldn\'t read saved answers. Retry loading the form.</string>
+    <!-- unchecked strings -->
+    <string name="choice_none_selected">None selected</string>
+    <string name="choice_selection_summary">%1$s (%2$s)</string>
+    <string name="choice_option_with_score">%1$s, score %2$s</string>
 </resources>

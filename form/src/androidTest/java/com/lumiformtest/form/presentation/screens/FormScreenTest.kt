@@ -23,6 +23,10 @@ import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.SemanticsNodeInteraction
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -49,6 +53,7 @@ import com.lumiformtest.form.presentation.model.ResponseOptionUiModel
 import com.lumiformtest.form.presentation.model.ResponseSetUiModel
 import com.lumiformtest.form.presentation.viewmodel.FormAction
 import com.lumiformtest.form.presentation.viewmodel.FormUiState
+import com.lumiformtest.form.presentation.components.ChoiceQuestion
 import com.lumiformtest.resources.R
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -185,38 +190,46 @@ class FormScreenTest {
         }
     }
     @Test
-    fun radioRowsDispatchOnceAndRenderOnlyTheObservedSingleAnswer() {
+    fun singleChoiceChipsDispatchOnceAndRenderOnlyTheObservedSingleAnswer() {
         var state by mutableStateOf(FormUiState(content = choiceContent, isReadingCache = false, isRefreshing = true))
         val actions = mutableListOf<FormAction>()
         compose.setContent { LumiformTestAppTheme { FormScreen(state, { actions += it }) } }
+        selectionSummary(R.string.form_single_choice, compose.activity.getString(R.string.choice_none_selected)).assertIsDisplayed()
         compose.onNodeWithText("First option").performClick()
+        selectionSummary(R.string.form_single_choice, compose.activity.getString(R.string.choice_none_selected)).assertIsDisplayed()
         compose.runOnIdle {
             assertEquals(listOf(FormAction.OptionClicked(ChoiceOptionUiInput(2, 101, 1))), actions)
             state = state.copy(content = selected(choiceContent, 2, setOf(1)))
         }
         compose.onNodeWithText("First option").assertIsSelected()
+        selectionSummary(R.string.form_single_choice, "First option").assertIsDisplayed()
         compose.onNodeWithText("Second option").assertIsNotSelected().performClick()
         compose.runOnIdle { state = state.copy(content = selected(choiceContent, 2, setOf(2))) }
         compose.onNodeWithText("First option").assertIsNotSelected()
+        selectionSummary(R.string.form_single_choice, "Second option").assertIsDisplayed()
         compose.onNodeWithText("Second option").assertIsSelected().performClick()
         compose.runOnIdle { assertEquals(3, actions.filterIsInstance<FormAction.OptionClicked>().size) }
         compose.onNodeWithText("Second option").assertIsSelected()
     }
 
     @Test
-    fun checkboxRowsDispatchOnceAndKeepIndependentObservedSelections() {
+    fun multipleChoiceChipsDispatchOnceAndKeepIndependentObservedSelections() {
         var state by mutableStateOf(FormUiState(content = choiceContent, isReadingCache = false))
         val actions = mutableListOf<FormAction>()
         compose.setContent { LumiformTestAppTheme { FormScreen(state, { actions += it }) } }
+        selectionSummary(R.string.form_multiple_choice, compose.activity.getString(R.string.choice_none_selected)).assertIsDisplayed()
         compose.onNodeWithText("First area").assertIsOff().performClick()
         compose.runOnIdle { state = state.copy(content = selected(choiceContent, 3, setOf(1))) }
         compose.onNodeWithText("First area").assertIsOn()
+        selectionSummary(R.string.form_multiple_choice, "First area").assertIsDisplayed()
         compose.onNodeWithText("Second area").assertIsOff().performClick()
         compose.runOnIdle { state = state.copy(content = selected(choiceContent, 3, setOf(1, 2))) }
+        selectionSummary(R.string.form_multiple_choice, "First area", "Second area").assertIsDisplayed()
         compose.onNodeWithText("First area").assertIsOn().performClick()
         compose.runOnIdle { state = state.copy(content = selected(choiceContent, 3, setOf(2))) }
         compose.onNodeWithText("First area").assertIsOff()
         compose.onNodeWithText("Second area").assertIsOn()
+        selectionSummary(R.string.form_multiple_choice, "Second area").assertIsDisplayed()
         compose.runOnIdle {
             assertEquals(listOf(
                 ChoiceOptionUiInput(3, 102, 1), ChoiceOptionUiInput(3, 102, 2), ChoiceOptionUiInput(3, 102, 1)
@@ -249,9 +262,9 @@ class FormScreenTest {
     }
 
     @Test
-    fun longChoiceLabelsWrapWithLargeFontsInBothThemes() {
+    fun longChoiceLabelsScrollWithoutTruncationInBothThemes() {
         var dark by mutableStateOf(false)
-        val text = "An entrance area with a long description that should wrap on narrow screens."
+        val text = "An entrance area with a long description that should scroll on narrow screens."
         compose.setContent {
             val density = LocalDensity.current.density
             CompositionLocalProvider(LocalDensity provides Density(density, fontScale = 2f)) {
@@ -267,12 +280,88 @@ class FormScreenTest {
             }
         }
         repeat(2) {
+            val options = compose.onNodeWithTag("choice_options_2")
+            options.performSemanticsAction(SemanticsActions.ScrollBy) { it(-10_000f, 0f) }
             val layouts = mutableListOf<TextLayoutResult>()
             compose.onNodeWithText(text, useUnmergedTree = true).performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
-            assertTrue(layouts.single().lineCount > 1)
-            assertFalse(layouts.single().hasVisualOverflow)
+            assertEquals(1, layouts.single().lineCount)
+            assertFalse("Long chip text: size=${layouts.single().size}, paragraph=${layouts.single().multiParagraph.width}x${layouts.single().multiParagraph.height}, widthOverflow=${layouts.single().didOverflowWidth}, heightOverflow=${layouts.single().didOverflowHeight}", layouts.single().hasVisualOverflow)
+            val before = compose.onNodeWithText(text, useUnmergedTree = true).getUnclippedBoundsInRoot().left.value
+            options.performSemanticsAction(SemanticsActions.ScrollBy) { it(10_000f, 0f) }
+            val after = compose.onNodeWithText(text, useUnmergedTree = true).getUnclippedBoundsInRoot().left.value
+            assertTrue("A long label should be readable by horizontal scrolling", after < before)
             compose.runOnIdle { dark = true }
         }
+    }
+
+    @Test
+    fun choiceRowScrollsToBothScreenEdgesWhileTextKeepsItsIndentation() {
+        val question = FormRowUiModel.Choice(2, 1, 4, "Indented question", ResponseSetUiModel(101, false, listOf(
+            ResponseOptionUiModel(1, "First option with a longer label", null),
+            ResponseOptionUiModel(2, "Last option with a longer label", null)
+        )))
+        compose.setContent {
+            LumiformTestAppTheme {
+                Box(Modifier.width(320.dp)) {
+                    FormScreen(FormUiState(content = content.copy(rows = listOf(question)), isReadingCache = false), {})
+                }
+            }
+        }
+        val list = compose.onNodeWithTag("form_list").getUnclippedBoundsInRoot()
+        val options = compose.onNodeWithTag("choice_options_2")
+        val viewport = options.getUnclippedBoundsInRoot()
+        assertEquals(list.left.value, viewport.left.value, 0.5f)
+        assertEquals(list.right.value, viewport.right.value, 0.5f)
+        val title = compose.onNodeWithText("Indented question").getUnclippedBoundsInRoot()
+        val summary = selectionSummary(R.string.form_single_choice, compose.activity.getString(R.string.choice_none_selected))
+        val summaryBefore = summary.getUnclippedBoundsInRoot()
+        assertEquals(list.left.value + 56f, title.left.value, 0.5f)
+        assertEquals(title.left.value, compose.onNodeWithText("First option with a longer label").getUnclippedBoundsInRoot().left.value, 0.5f)
+        options.performSemanticsAction(SemanticsActions.ScrollBy) { it(100f * compose.activity.resources.displayMetrics.density, 0f) }
+        assertTrue("Chips can pass through the text inset", compose.onNodeWithText("First option with a longer label")
+            .getUnclippedBoundsInRoot().left < title.left)
+        options.performSemanticsAction(SemanticsActions.ScrollBy) { it(10_000f, 0f) }
+        assertEquals(list.right.value - 20f, compose.onNodeWithText("Last option with a longer label")
+            .getUnclippedBoundsInRoot().right.value, 0.5f)
+        assertEquals(summaryBefore, summary.getUnclippedBoundsInRoot())
+    }
+
+    @Test
+    fun chipsScrollInOneRowWithAccessibleTouchTargetsAndProvidedScoreBadges() {
+        val question = FormRowUiModel.Choice(2, 1, 1, "Question", ResponseSetUiModel(101, false, listOf(
+            ResponseOptionUiModel(1, "Scored option", 0), ResponseOptionUiModel(2, "Another scored option", 2),
+            ResponseOptionUiModel(3, "No score", null)
+        )))
+        compose.setContent {
+            LumiformTestAppTheme {
+                Box(Modifier.width(220.dp)) { ChoiceQuestion(question, enabled = true, onOptionClick = {}) }
+            }
+        }
+        val options = compose.onNodeWithTag("choice_options_2")
+        val first = compose.onNodeWithText("Scored option").getUnclippedBoundsInRoot()
+        val formatter = java.text.NumberFormat.getIntegerInstance(compose.activity.resources.configuration.locales[0])
+        compose.onNodeWithContentDescription(compose.activity.getString(R.string.choice_option_with_score,
+            "Scored option", formatter.format(0))).assertIsDisplayed()
+        compose.onNodeWithText(formatter.format(0), useUnmergedTree = true).assertIsDisplayed()
+        options.performScrollToKey(2L)
+        val second = compose.onNodeWithText("Another scored option").assertIsDisplayed().getUnclippedBoundsInRoot()
+        compose.onNodeWithText(formatter.format(2), useUnmergedTree = true).assertIsDisplayed()
+        options.performScrollToKey(3L)
+        val last = compose.onNodeWithText("No score").assertIsDisplayed().getUnclippedBoundsInRoot()
+        for (chip in listOf(first, second, last)) {
+            assertEquals("Options should stay on the same row", first.top.value, chip.top.value, 0.5f)
+            assertTrue("Each chip needs a 48 dp touch target", (chip.bottom - chip.top).value >= 47.5f)
+        }
+        val footer = selectionSummary(R.string.form_single_choice, compose.activity.getString(R.string.choice_none_selected))
+            .assertIsDisplayed().fetchSemanticsNode().boundsInRoot
+        val density = compose.activity.resources.displayMetrics.density
+        assertTrue("Selection details should stay below the chips", footer.top >= last.bottom.value * density)
+    }
+
+    private fun selectionSummary(type: Int, vararg labels: String): SemanticsNodeInteraction {
+        var matcher = hasText(compose.activity.getString(type), substring = true)
+        for (label in labels) matcher = matcher and hasText(label, substring = true)
+        return compose.onNode(matcher)
     }
 
     @Test
