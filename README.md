@@ -43,11 +43,11 @@ keeps the theme's neutral foreground; size and indentation also show the hierarc
 
 ## Structure
 
-- `app`: application, splash launcher, MainActivity, and root navigation.
+- `app`: application, splash launcher, MainActivity, root navigation, and app identity strings.
 - `base`: MVI contracts and `BaseCoroutineViewModel`.
 - `design`: shared Compose theme.
 - `networking`: shared OkHttp client, logging interceptor, and Retrofit instance.
-- `resources`: all Android resource files, including strings, icons, XML themes,
+- `resources`: shared Android resource files, including UI strings, icons, XML themes,
   and backup configuration.
 - `form`: form and image destinations, UI, ViewModels, and the feature's data and
   domain layers.
@@ -55,9 +55,12 @@ keeps the theme's neutral foreground; size and indentation also show the hierarc
 I keep the layers inside each feature, so changes to the form stay together.
 There are no separate data or domain Gradle modules.
 
-All Android `res/` files live in `resources/src/main/res`. Modules that use them
+Shared Android `res/` files live in `resources/src/main/res`. Modules that use them
 depend directly on `:resources` and import `com.lumiformtest.resources.R`.
 I keep Compose theme code in `:design`, as in ASA.
+
+App identity strings, such as `app_name`, live separately in
+`app/src/main/res/values/strings_non_translatable.xml` and use `translatable="false"`.
 
 ## Layer mapping
 

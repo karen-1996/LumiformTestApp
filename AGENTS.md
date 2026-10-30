@@ -5,7 +5,7 @@ They are project-scoped guidance; the user's current instructions take priority.
 
 - Keep `presentation`, `domain`, `data`, and `di` inside each feature module.
 - Keep OkHttp, interceptors, base URL, and Retrofit provisioning in `:networking`. Features declare request APIs and create them from the injected Retrofit instance.
-- Keep all Android `res/` files in `:resources`, including strings, icons, XML themes, and configuration XML. Consumers import `com.lumiformtest.resources.R`; Compose theme code stays in `:design`.
+- Keep shared Android `res/` files in `:resources`, including UI strings, icons, XML themes, and configuration XML. Consumers import `com.lumiformtest.resources.R`; Compose theme code stays in `:design`. App-owned non-translatable identity strings, such as `app_name`, belong in `app/src/main/res/values/strings_non_translatable.xml` with `translatable="false"`.
 - Use explicit mappers at data/domain and domain/UI boundaries. Keep DTOs and entities out of domain and UI contracts, and domain models out of screen state.
 - Preserve the custom MVI with one action handler for state changes and side effects.
 - Prefer lazy initialization wherever it safely defers object creation, following ASA. Use `by lazy` for reusable Kotlin properties, Dagger `Lazy` for conditional injected dependencies, and `remember` for Compose-owned values. Preserve required lifecycle/configuration timing and avoid initializing unused resources during cleanup.
@@ -13,6 +13,7 @@ They are project-scoped guidance; the user's current instructions take priority.
 - Provide a named Compose preview for every screen and visual component. Use sample UI models and local assets; preview stateless content instead of Hilt routes, and keep previews independent of network and storage.
 - Keep changes small enough to review. Do not commit or push until the user reviews and explicitly approves the changes.
 - Run checks appropriate to the change and report their actual results and limits.
+- Before Android runtime checks, inspect `adb devices -l` and prefer a suitable connected device. Launch an emulator only when connected devices cannot cover the check. Target the selected device explicitly.
 
 Skill routing:
 

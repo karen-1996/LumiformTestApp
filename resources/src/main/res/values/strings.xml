@@ -1,6 +1,4 @@
 <resources>
-    <string name="app_name">LumiformTestApp</string>
-    <!-- unchecked strings -->
     <string name="form_empty">This form has no content.</string>
     <string name="image_title">Image</string>
     <string name="image_unavailable">This image is no longer in the saved form.</string>

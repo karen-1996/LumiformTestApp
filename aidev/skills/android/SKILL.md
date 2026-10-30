@@ -13,7 +13,7 @@ description: Change Android code, manifests, resources, Gradle modules, and Andr
 - Add dependencies when their implementation needs them. Check current stable versions in official release notes rather than guessing.
 - Keep Android Context out of ViewModels. Put platform work behind context-free domain contracts.
 - Use existing theme resources and MaterialTheme for colors. Leave vector asset palettes unchanged unless the task asks to edit them.
-- Keep all Android `res/` files in `resources/src/main/res`, including strings, icons, layouts, fonts, XML themes, and configuration XML. Do not create resource folders inside app or feature modules.
+- Keep shared Android resources in `resources/src/main/res`, including UI strings, icons, layouts, fonts, XML themes, and configuration XML. Feature modules have no local resources. App-owned non-translatable identity strings, such as `app_name`, belong in `app/src/main/res/values/strings_non_translatable.xml` with `translatable="false"`.
 - Give resource consumers a direct `:resources` dependency and import `com.lumiformtest.resources.R`. Keep Compose theme code in `:design`.
 - Put visible text in shared string resources. Append new entries under `<!-- unchecked strings -->` in each supported locale of `:resources`.
 - Decorative images use a null content description. Meaningful controls need concise accessibility text.

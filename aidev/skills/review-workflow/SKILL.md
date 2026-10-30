@@ -13,7 +13,9 @@ description: Prepare small reviewable changes and verify this Android challenge 
 - Keep tests meaningful. Do not add placeholder assertions or snapshots of incidental implementation details.
 - Report exactly what ran, what passed, remaining findings, and any untested behavior. Saved Compose state restoration is not a full process-death test.
 - Keep IDE files, SDK paths, credentials, build output, and emulator state outside the proposed commit.
-- Use a read-only test emulator where practical, and stop an emulator started for verification when finished.
+- Before runtime checks, run `adb devices -l`. Prefer a suitable connected physical device, then an already running emulator. Launch an emulator only when the connected devices cannot cover the check.
+- Target the chosen serial explicitly with `adb -s` and the equivalent Gradle device filter; do not run checks on every connected device by default.
+- When an emulator is needed, use a read-only instance where practical and stop any emulator started for verification when finished.
 - Before handoff, inspect the diff, check whitespace, and confirm Git still has the expected commit when approval is pending.
 
 See the root README for current build and test commands. Keep those commands
