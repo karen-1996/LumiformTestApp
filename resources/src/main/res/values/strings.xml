@@ -28,4 +28,6 @@
     <string name="choice_none_selected">None selected</string>
     <string name="choice_selection_summary">%1$s (%2$s)</string>
     <string name="choice_option_with_score">%1$s, score %2$s</string>
+    <string name="choice_unnamed_option">Option %1$d</string>
+    <string name="choice_no_options">No options available</string>
 </resources>

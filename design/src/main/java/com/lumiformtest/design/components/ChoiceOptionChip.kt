@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
@@ -18,6 +17,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -28,6 +28,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.lumiformtest.design.theme.LumiformTestAppTheme
+
+private val ChipLineBreaks by lazy { Regex("[\\r\\n\\t\\u2028\\u2029]+") }
 
 @Composable
 fun ChoiceOptionChip(
@@ -40,6 +42,8 @@ fun ChoiceOptionChip(
     badge: String? = null,
     accessibilityLabel: String? = null
 ) {
+    // Keep every word visible when the server sends line breaks.
+    val displayLabel = remember(label) { label.replace(ChipLineBreaks, " ") }
     val colors = MaterialTheme.colorScheme
     val shape = MaterialTheme.shapes.extraLarge
     val foreground = when {
@@ -54,7 +58,7 @@ fun ChoiceOptionChip(
         selected = selected, enabled = enabled, role = Role.RadioButton, onClick = onClick
     )
     Surface(
-        modifier = modifier.heightIn(min = 48.dp).clip(shape).then(selection).then(
+        modifier = modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp).clip(shape).then(selection).then(
             if (accessibilityLabel != null) Modifier.semantics { contentDescription = accessibilityLabel } else Modifier
         ),
         shape = shape,
@@ -69,7 +73,7 @@ fun ChoiceOptionChip(
             Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(label, Modifier.width(IntrinsicSize.Max), style = MaterialTheme.typography.labelLarge, maxLines = 1, softWrap = false)
+            Text(displayLabel, Modifier.width(IntrinsicSize.Max), style = MaterialTheme.typography.labelLarge, maxLines = 1, softWrap = false)
             if (badge != null) Surface(
                 shape = CircleShape,
                 color = if (enabled && selected) colors.primary else colors.surfaceContainerHighest,
@@ -97,6 +101,10 @@ private fun DisabledChipPreview() = PreviewChip(selected = true, enabled = false
 @Preview(name = "Chip · large text", showBackground = true, widthDp = 320, fontScale = 2f)
 @Composable
 private fun LargeChipPreview() = PreviewChip(selected = true, badge = "0", label = "Entrance and storage area")
+
+@Preview(name = "Multiline label on one row", showBackground = true, widthDp = 320)
+@Composable
+private fun MultilineChipPreview() = PreviewChip(selected = false, label = "Entrance\nStorage\nLoading bay")
 
 @Composable
 private fun PreviewChip(selected: Boolean, enabled: Boolean = true, darkTheme: Boolean = false, badge: String? = null, label: String = "Equipment checks") {

@@ -43,11 +43,21 @@ internal fun ChoiceQuestion(
 ) {
     val multiple = question.responseSet.allowsMultipleSelection
     val locale = LocalConfiguration.current.locales[0]
+    val fallbackLabel = stringResource(R.string.choice_unnamed_option)
+    val options = remember(question.responseSet.options, fallbackLabel, locale) {
+        // Missing labels should not create unnamed controls or change the saved definition.
+        question.responseSet.options.mapIndexed { index, option ->
+            if (option.label.isBlank()) option.copy(label = String.format(locale, fallbackLabel, index + 1)) else option
+        }
+    }
     val scoreFormatter = remember(locale) { lazy { NumberFormat.getIntegerInstance(locale) } }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(question.text, modifier = Modifier.padding(contentPadding), style = MaterialTheme.typography.bodyMedium)
-        // Scope option IDs and saved scroll position to this response set.
-        key(question.id, question.responseSet.id) {
+        if (options.isEmpty()) {
+            Text(stringResource(R.string.choice_no_options), modifier = Modifier.padding(contentPadding),
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        } else key(question.id, question.responseSet.id) {
+            // Scope option IDs and saved scroll position to this response set.
             LazyRow(
                 state = rememberLazyListState(),
                 modifier = Modifier.fillMaxWidth().testTag("choice_options_${question.id}")
@@ -56,7 +66,7 @@ internal fun ChoiceQuestion(
                 contentPadding = contentPadding,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                items(question.responseSet.options, key = { it.id }, contentType = { "choice_option" }) { option ->
+                items(options, key = { it.id }, contentType = { "choice_option" }) { option ->
                     val input = remember(question.id, question.responseSet.id, option.id) {
                         ChoiceOptionUiInput(question.id, question.responseSet.id, option.id)
                     }
@@ -70,8 +80,8 @@ internal fun ChoiceQuestion(
                 }
             }
         }
-        val labels = remember(question.responseSet.options, question.selectedOptionIds) {
-            question.responseSet.options.filter { it.id in question.selectedOptionIds }.map { it.label }
+        val labels = remember(options, question.selectedOptionIds) {
+            options.filter { it.id in question.selectedOptionIds }.map { it.label }
         }
         val selection = if (labels.isEmpty()) stringResource(R.string.choice_none_selected) else {
             remember(labels, locale) { ListFormatter.getInstance(locale).format(labels) }
@@ -110,6 +120,20 @@ private fun PreviewQuestion(question: FormRowUiModel.Choice, enabled: Boolean = 
 @Preview(name = "No answer selected", showBackground = true)
 @Composable
 private fun UnansweredQuestionPreview() = PreviewQuestion(FormPreviewData.singleChoice.copy(selectedOptionIds = emptySet()))
+
+@Preview(name = "Missing option labels", showBackground = true)
+@Composable
+private fun MissingLabelsQuestionPreview() = PreviewQuestion(FormPreviewData.singleChoice.copy(
+    responseSet = FormPreviewData.singleChoice.responseSet.copy(options = FormPreviewData.singleChoice.responseSet.options.map {
+        it.copy(label = "", score = null)
+    })
+))
+
+@Preview(name = "No options available", showBackground = true)
+@Composable
+private fun EmptyOptionsQuestionPreview() = PreviewQuestion(FormPreviewData.singleChoice.copy(
+    responseSet = FormPreviewData.singleChoice.responseSet.copy(options = emptyList()), selectedOptionIds = emptySet()
+))
 
 @Preview(name = "Edge-to-edge options · indented question", showBackground = true, widthDp = 320)
 @Composable

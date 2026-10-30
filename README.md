@@ -165,6 +165,9 @@ have a different fill and border, while radio/checkbox semantics keep the behavi
 for accessibility. Optional response scores appear as badges; no score is calculated.
 The footer lists saved selected labels, or "None selected", beside the choice type.
 Lists and score values follow the current locale.
+Multiline option labels display on one line without dropping words. Blank labels
+use numbered names in the chips and selection summary; saved definitions stay
+unchanged. Questions with an empty response set show "No options available".
 
 ## MVI
 
