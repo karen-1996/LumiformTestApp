@@ -1,0 +1,25 @@
+[
+  {
+    "type": "page",
+    "id": 1,
+    "title": "Local form",
+    "items": [
+      {
+        "type": "choice",
+        "id": 2,
+        "content": "Question 2",
+        "response_set": {
+          "id": 800,
+          "multiple_selection": false,
+          "responses": [
+            {
+              "id": 1,
+              "label": "Too large for Int",
+              "score": 2147483648
+            }
+          ]
+        }
+      }
+    ]
+  }
+]

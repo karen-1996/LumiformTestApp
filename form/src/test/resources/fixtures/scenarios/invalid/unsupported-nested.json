@@ -1,0 +1,21 @@
+[
+  {
+    "type": "page",
+    "id": 1,
+    "title": "Local form",
+    "items": [
+      {
+        "type": "section",
+        "id": 2,
+        "title": "Nested unsupported",
+        "items": [
+          {
+            "type": "signature",
+            "id": 3,
+            "content": "Sign here"
+          }
+        ]
+      }
+    ]
+  }
+]

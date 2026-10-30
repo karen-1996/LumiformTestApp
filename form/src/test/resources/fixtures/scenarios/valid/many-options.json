@@ -1,0 +1,543 @@
+[
+  {
+    "type": "page",
+    "id": 1,
+    "title": "Local form",
+    "items": [
+      {
+        "type": "choice",
+        "id": 2,
+        "content": "Question 2",
+        "response_set": {
+          "id": 500,
+          "multiple_selection": false,
+          "responses": [
+            {
+              "id": 1,
+              "label": "Option 01"
+            },
+            {
+              "id": 2,
+              "label": "Option 02"
+            },
+            {
+              "id": 3,
+              "label": "Option 03"
+            },
+            {
+              "id": 4,
+              "label": "Option 04"
+            },
+            {
+              "id": 5,
+              "label": "Option 05"
+            },
+            {
+              "id": 6,
+              "label": "Option 06"
+            },
+            {
+              "id": 7,
+              "label": "Option 07"
+            },
+            {
+              "id": 8,
+              "label": "Option 08"
+            },
+            {
+              "id": 9,
+              "label": "Option 09"
+            },
+            {
+              "id": 10,
+              "label": "Option 10"
+            },
+            {
+              "id": 11,
+              "label": "Option 11"
+            },
+            {
+              "id": 12,
+              "label": "Option 12"
+            },
+            {
+              "id": 13,
+              "label": "Option 13"
+            },
+            {
+              "id": 14,
+              "label": "Option 14"
+            },
+            {
+              "id": 15,
+              "label": "Option 15"
+            },
+            {
+              "id": 16,
+              "label": "Option 16"
+            },
+            {
+              "id": 17,
+              "label": "Option 17"
+            },
+            {
+              "id": 18,
+              "label": "Option 18"
+            },
+            {
+              "id": 19,
+              "label": "Option 19"
+            },
+            {
+              "id": 20,
+              "label": "Option 20"
+            },
+            {
+              "id": 21,
+              "label": "Option 21"
+            },
+            {
+              "id": 22,
+              "label": "Option 22"
+            },
+            {
+              "id": 23,
+              "label": "Option 23"
+            },
+            {
+              "id": 24,
+              "label": "Option 24"
+            },
+            {
+              "id": 25,
+              "label": "Option 25"
+            },
+            {
+              "id": 26,
+              "label": "Option 26"
+            },
+            {
+              "id": 27,
+              "label": "Option 27"
+            },
+            {
+              "id": 28,
+              "label": "Option 28"
+            },
+            {
+              "id": 29,
+              "label": "Option 29"
+            },
+            {
+              "id": 30,
+              "label": "Option 30"
+            },
+            {
+              "id": 31,
+              "label": "Option 31"
+            },
+            {
+              "id": 32,
+              "label": "Option 32"
+            },
+            {
+              "id": 33,
+              "label": "Option 33"
+            },
+            {
+              "id": 34,
+              "label": "Option 34"
+            },
+            {
+              "id": 35,
+              "label": "Option 35"
+            },
+            {
+              "id": 36,
+              "label": "Option 36"
+            },
+            {
+              "id": 37,
+              "label": "Option 37"
+            },
+            {
+              "id": 38,
+              "label": "Option 38"
+            },
+            {
+              "id": 39,
+              "label": "Option 39"
+            },
+            {
+              "id": 40,
+              "label": "Option 40"
+            },
+            {
+              "id": 41,
+              "label": "Option 41"
+            },
+            {
+              "id": 42,
+              "label": "Option 42"
+            },
+            {
+              "id": 43,
+              "label": "Option 43"
+            },
+            {
+              "id": 44,
+              "label": "Option 44"
+            },
+            {
+              "id": 45,
+              "label": "Option 45"
+            },
+            {
+              "id": 46,
+              "label": "Option 46"
+            },
+            {
+              "id": 47,
+              "label": "Option 47"
+            },
+            {
+              "id": 48,
+              "label": "Option 48"
+            },
+            {
+              "id": 49,
+              "label": "Option 49"
+            },
+            {
+              "id": 50,
+              "label": "Option 50"
+            },
+            {
+              "id": 51,
+              "label": "Option 51"
+            },
+            {
+              "id": 52,
+              "label": "Option 52"
+            },
+            {
+              "id": 53,
+              "label": "Option 53"
+            },
+            {
+              "id": 54,
+              "label": "Option 54"
+            },
+            {
+              "id": 55,
+              "label": "Option 55"
+            },
+            {
+              "id": 56,
+              "label": "Option 56"
+            },
+            {
+              "id": 57,
+              "label": "Option 57"
+            },
+            {
+              "id": 58,
+              "label": "Option 58"
+            },
+            {
+              "id": 59,
+              "label": "Option 59"
+            },
+            {
+              "id": 60,
+              "label": "Option 60"
+            },
+            {
+              "id": 61,
+              "label": "Option 61"
+            },
+            {
+              "id": 62,
+              "label": "Option 62"
+            },
+            {
+              "id": 63,
+              "label": "Option 63"
+            },
+            {
+              "id": 64,
+              "label": "Option 64"
+            }
+          ]
+        }
+      },
+      {
+        "type": "choice",
+        "id": 3,
+        "content": "Question 3",
+        "response_set": {
+          "id": 501,
+          "multiple_selection": true,
+          "responses": [
+            {
+              "id": 1,
+              "label": "Area 01"
+            },
+            {
+              "id": 2,
+              "label": "Area 02"
+            },
+            {
+              "id": 3,
+              "label": "Area 03"
+            },
+            {
+              "id": 4,
+              "label": "Area 04"
+            },
+            {
+              "id": 5,
+              "label": "Area 05"
+            },
+            {
+              "id": 6,
+              "label": "Area 06"
+            },
+            {
+              "id": 7,
+              "label": "Area 07"
+            },
+            {
+              "id": 8,
+              "label": "Area 08"
+            },
+            {
+              "id": 9,
+              "label": "Area 09"
+            },
+            {
+              "id": 10,
+              "label": "Area 10"
+            },
+            {
+              "id": 11,
+              "label": "Area 11"
+            },
+            {
+              "id": 12,
+              "label": "Area 12"
+            },
+            {
+              "id": 13,
+              "label": "Area 13"
+            },
+            {
+              "id": 14,
+              "label": "Area 14"
+            },
+            {
+              "id": 15,
+              "label": "Area 15"
+            },
+            {
+              "id": 16,
+              "label": "Area 16"
+            },
+            {
+              "id": 17,
+              "label": "Area 17"
+            },
+            {
+              "id": 18,
+              "label": "Area 18"
+            },
+            {
+              "id": 19,
+              "label": "Area 19"
+            },
+            {
+              "id": 20,
+              "label": "Area 20"
+            },
+            {
+              "id": 21,
+              "label": "Area 21"
+            },
+            {
+              "id": 22,
+              "label": "Area 22"
+            },
+            {
+              "id": 23,
+              "label": "Area 23"
+            },
+            {
+              "id": 24,
+              "label": "Area 24"
+            },
+            {
+              "id": 25,
+              "label": "Area 25"
+            },
+            {
+              "id": 26,
+              "label": "Area 26"
+            },
+            {
+              "id": 27,
+              "label": "Area 27"
+            },
+            {
+              "id": 28,
+              "label": "Area 28"
+            },
+            {
+              "id": 29,
+              "label": "Area 29"
+            },
+            {
+              "id": 30,
+              "label": "Area 30"
+            },
+            {
+              "id": 31,
+              "label": "Area 31"
+            },
+            {
+              "id": 32,
+              "label": "Area 32"
+            },
+            {
+              "id": 33,
+              "label": "Area 33"
+            },
+            {
+              "id": 34,
+              "label": "Area 34"
+            },
+            {
+              "id": 35,
+              "label": "Area 35"
+            },
+            {
+              "id": 36,
+              "label": "Area 36"
+            },
+            {
+              "id": 37,
+              "label": "Area 37"
+            },
+            {
+              "id": 38,
+              "label": "Area 38"
+            },
+            {
+              "id": 39,
+              "label": "Area 39"
+            },
+            {
+              "id": 40,
+              "label": "Area 40"
+            },
+            {
+              "id": 41,
+              "label": "Area 41"
+            },
+            {
+              "id": 42,
+              "label": "Area 42"
+            },
+            {
+              "id": 43,
+              "label": "Area 43"
+            },
+            {
+              "id": 44,
+              "label": "Area 44"
+            },
+            {
+              "id": 45,
+              "label": "Area 45"
+            },
+            {
+              "id": 46,
+              "label": "Area 46"
+            },
+            {
+              "id": 47,
+              "label": "Area 47"
+            },
+            {
+              "id": 48,
+              "label": "Area 48"
+            },
+            {
+              "id": 49,
+              "label": "Area 49"
+            },
+            {
+              "id": 50,
+              "label": "Area 50"
+            },
+            {
+              "id": 51,
+              "label": "Area 51"
+            },
+            {
+              "id": 52,
+              "label": "Area 52"
+            },
+            {
+              "id": 53,
+              "label": "Area 53"
+            },
+            {
+              "id": 54,
+              "label": "Area 54"
+            },
+            {
+              "id": 55,
+              "label": "Area 55"
+            },
+            {
+              "id": 56,
+              "label": "Area 56"
+            },
+            {
+              "id": 57,
+              "label": "Area 57"
+            },
+            {
+              "id": 58,
+              "label": "Area 58"
+            },
+            {
+              "id": 59,
+              "label": "Area 59"
+            },
+            {
+              "id": 60,
+              "label": "Area 60"
+            },
+            {
+              "id": 61,
+              "label": "Area 61"
+            },
+            {
+              "id": 62,
+              "label": "Area 62"
+            },
+            {
+              "id": 63,
+              "label": "Area 63"
+            },
+            {
+              "id": 64,
+              "label": "Area 64"
+            }
+          ]
+        }
+      }
+    ]
+  }
+]

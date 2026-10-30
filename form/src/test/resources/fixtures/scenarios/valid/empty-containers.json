@@ -1,0 +1,21 @@
+[
+  {
+    "type": "page",
+    "id": 1,
+    "title": "Local form",
+    "items": [
+      {
+        "type": "section",
+        "id": 2,
+        "title": "Empty section",
+        "items": []
+      }
+    ]
+  },
+  {
+    "type": "page",
+    "id": 3,
+    "title": "Empty page",
+    "items": []
+  }
+]

@@ -1,0 +1,244 @@
+{
+  "cases": [
+    {
+      "file": "valid/empty-document.json",
+      "accept": true,
+      "note": "A successfully fetched empty form is not a loading state.",
+      "ui": true,
+      "rows": 0,
+      "pages": 0,
+      "lastId": null
+    },
+    {
+      "file": "valid/empty-containers.json",
+      "accept": true,
+      "note": "Empty pages and sections remain visible.",
+      "ui": true,
+      "rows": 3,
+      "pages": 2,
+      "lastId": 3
+    },
+    {
+      "file": "valid/mixed-hierarchy.json",
+      "accept": true,
+      "note": "All item types, direct questions, nested sections, and nullable/zero/negative scores.",
+      "ui": true,
+      "rows": 8,
+      "pages": 1,
+      "lastId": 6
+    },
+    {
+      "file": "valid/unicode-and-rtl.json",
+      "accept": true,
+      "note": "Mixed scripts, bidirectional text, combining marks, emoji, escapes, and line breaks.",
+      "ui": true,
+      "rows": 3,
+      "pages": 1,
+      "lastId": 3
+    },
+    {
+      "file": "valid/long-copy.json",
+      "accept": true,
+      "note": "Long titles, paragraphs, unbroken and multiline option labels.",
+      "ui": true,
+      "rows": 4,
+      "pages": 1,
+      "lastId": 4
+    },
+    {
+      "file": "valid/shared-response-sets.json",
+      "accept": true,
+      "note": "Two questions share a set; another set reuses option IDs without sharing answers.",
+      "ui": true,
+      "rows": 4,
+      "pages": 1,
+      "lastId": 4
+    },
+    {
+      "file": "valid/large-and-unordered-ids.json",
+      "accept": true,
+      "note": "Signed Long/Int boundaries, zero, nonsequential IDs; source order must survive storage.",
+      "ui": true,
+      "rows": 5,
+      "pages": 1,
+      "lastId": 9000000000
+    },
+    {
+      "file": "valid/deep-sections.json",
+      "accept": true,
+      "note": "40 nested sections; visual indentation should remain capped.",
+      "ui": true,
+      "rows": 42,
+      "pages": 1,
+      "lastId": 1000
+    },
+    {
+      "file": "valid/many-options.json",
+      "accept": true,
+      "note": "64 chips per question; the final option must remain reachable.",
+      "ui": true,
+      "rows": 3,
+      "pages": 1,
+      "lastId": 3
+    },
+    {
+      "file": "valid/many-rows.json",
+      "accept": true,
+      "note": "250 text rows; scroll to the last row and retain stable identities.",
+      "ui": true,
+      "rows": 261,
+      "pages": 1,
+      "lastId": 1249
+    },
+    {
+      "file": "valid/image-variants.json",
+      "accept": true,
+      "note": "Tests serve landscape, portrait, transparency, repeated URLs, 404, and corrupt bytes locally.",
+      "ui": true,
+      "rows": 7,
+      "pages": 1,
+      "lastId": 7
+    },
+    {
+      "file": "valid/extra-metadata.json",
+      "accept": true,
+      "note": "Unknown metadata is ignored; JSON theme metadata does not style the UI.",
+      "ui": true,
+      "rows": 2,
+      "pages": 1,
+      "lastId": 2
+    },
+    {
+      "file": "probe/blank-display-values.json",
+      "accept": true,
+      "note": "Accepted by the current schema; inspect unnamed chips and questions without options.",
+      "ui": true,
+      "rows": 4,
+      "pages": 1,
+      "lastId": 4
+    },
+    {
+      "file": "refresh/01-before.json",
+      "accept": true,
+      "note": "Select options 1 and 3 on question 2 and option 2 on question 3.",
+      "ui": false,
+      "rows": 4,
+      "pages": 1,
+      "lastId": 4
+    },
+    {
+      "file": "refresh/02-reordered.json",
+      "accept": true,
+      "note": "Remove option 1, reorder content, rename C, and change multiple to single; keep option 3.",
+      "ui": false,
+      "rows": 4,
+      "pages": 1,
+      "lastId": 2
+    },
+    {
+      "file": "refresh/03-replaced-set.json",
+      "accept": true,
+      "note": "Replacing the response set and removing another question drops stale answers.",
+      "ui": false,
+      "rows": 2,
+      "pages": 1,
+      "lastId": 2
+    },
+    {
+      "file": "invalid/unsupported-video.json",
+      "accept": false,
+      "note": "Reject the complete snapshot, including supported siblings.",
+      "ui": false
+    },
+    {
+      "file": "invalid/unsupported-nested.json",
+      "accept": false,
+      "note": "Unsupported type nested inside a section.",
+      "ui": false
+    },
+    {
+      "file": "invalid/unsupported-root.json",
+      "accept": false,
+      "note": "Unsupported root discriminator.",
+      "ui": false
+    },
+    {
+      "file": "invalid/duplicate-content-ids.json",
+      "accept": false,
+      "note": "Global node IDs must be unique.",
+      "ui": false
+    },
+    {
+      "file": "invalid/duplicate-option-ids.json",
+      "accept": false,
+      "note": "Options within a response set must have unique IDs.",
+      "ui": false
+    },
+    {
+      "file": "invalid/conflicting-response-sets.json",
+      "accept": false,
+      "note": "Same response-set ID with conflicting definitions.",
+      "ui": false
+    },
+    {
+      "file": "invalid/nested-page.json",
+      "accept": false,
+      "note": "Pages belong at the root.",
+      "ui": false
+    },
+    {
+      "file": "invalid/non-page-root.json",
+      "accept": false,
+      "note": "A supported item type in an unsupported hierarchy position.",
+      "ui": false
+    },
+    {
+      "file": "invalid/missing-type.json",
+      "accept": false,
+      "note": "Missing type discriminator.",
+      "ui": false
+    },
+    {
+      "file": "invalid/missing-choice-mode.json",
+      "accept": false,
+      "note": "Selection mode must not be defaulted.",
+      "ui": false
+    },
+    {
+      "file": "invalid/null-required-field.json",
+      "accept": false,
+      "note": "Required text cannot be null.",
+      "ui": false
+    },
+    {
+      "file": "invalid/id-overflow.json",
+      "accept": false,
+      "note": "Out-of-range numeric ID.",
+      "ui": false
+    },
+    {
+      "file": "invalid/score-overflow.json",
+      "accept": false,
+      "note": "Out-of-range score.",
+      "ui": false
+    },
+    {
+      "file": "invalid/wrong-items-shape.json",
+      "accept": false,
+      "note": "Items must be an array.",
+      "ui": false
+    },
+    {
+      "file": "invalid/excessive-nesting.json",
+      "accept": false,
+      "note": "Excessive nesting must become a typed content failure, never a stack overflow.",
+      "ui": false
+    },
+    {
+      "file": "invalid/truncated.json",
+      "accept": false,
+      "ui": false,
+      "note": "Deliberately malformed, truncated JSON."
+    }
+  ]
+}

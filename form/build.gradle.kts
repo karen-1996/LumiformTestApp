@@ -17,6 +17,14 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     buildFeatures { compose = true }
+    sourceSets {
+        getByName("test").kotlin.srcDir("src/sharedTest/java")
+        getByName("androidTest").apply {
+            kotlin.srcDir("src/sharedTest/java")
+            // The same checked-in JSONs drive JVM, Room, and screen checks.
+            assets.srcDir("src/test/resources")
+        }
+    }
 }
 
 room { schemaDirectory("$projectDir/schemas") }

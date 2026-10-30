@@ -1,0 +1,13 @@
+[
+  {
+    "type": "page",
+    "id": 1,
+    "title": "Local form",
+    "items": [
+      {
+        "id": 2,
+        "content": "Missing discriminator"
+      }
+    ]
+  }
+]

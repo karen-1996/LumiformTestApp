@@ -1,0 +1,88 @@
+[
+  {
+    "type": "page",
+    "id": 1,
+    "title": "Local form",
+    "items": [
+      {
+        "type": "text",
+        "id": 9,
+        "content": "Direct page question comes before the section."
+      },
+      {
+        "type": "section",
+        "id": 2,
+        "title": "Site inspection",
+        "items": [
+          {
+            "type": "text",
+            "id": 8,
+            "content": "Nested text"
+          },
+          {
+            "type": "image",
+            "id": 4,
+            "title": "Entrance",
+            "src": "https://fixtures.example.invalid/landscape.png"
+          },
+          {
+            "type": "choice",
+            "id": 5,
+            "content": "Question 5",
+            "response_set": {
+              "id": 100,
+              "multiple_selection": false,
+              "responses": [
+                {
+                  "id": 1,
+                  "label": "Safe",
+                  "score": 0
+                },
+                {
+                  "id": 2,
+                  "label": "Needs attention",
+                  "score": -2
+                },
+                {
+                  "id": 3,
+                  "label": "Not applicable",
+                  "score": null
+                }
+              ]
+            }
+          },
+          {
+            "type": "section",
+            "id": 3,
+            "title": "Follow-up",
+            "items": [
+              {
+                "type": "choice",
+                "id": 6,
+                "content": "Question 6",
+                "response_set": {
+                  "id": 101,
+                  "multiple_selection": true,
+                  "responses": [
+                    {
+                      "id": 1,
+                      "label": "Entrance"
+                    },
+                    {
+                      "id": 2,
+                      "label": "Storage"
+                    },
+                    {
+                      "id": 3,
+                      "label": "Loading bay"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

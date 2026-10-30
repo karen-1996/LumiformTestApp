@@ -1,0 +1,18 @@
+[
+  {
+    "type": "page",
+    "id": 1,
+    "title": "Local form",
+    "items": [
+      {
+        "type": "choice",
+        "id": 2,
+        "content": "Choose",
+        "response_set": {
+          "id": 800,
+          "responses": []
+        }
+      }
+    ]
+  }
+]

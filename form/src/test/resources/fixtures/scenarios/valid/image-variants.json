@@ -1,0 +1,45 @@
+[
+  {
+    "type": "page",
+    "id": 1,
+    "title": "Local form",
+    "items": [
+      {
+        "type": "image",
+        "id": 2,
+        "title": "Landscape",
+        "src": "https://fixtures.example.invalid/landscape.png"
+      },
+      {
+        "type": "image",
+        "id": 3,
+        "title": "Portrait",
+        "src": "https://fixtures.example.invalid/portrait.png"
+      },
+      {
+        "type": "image",
+        "id": 4,
+        "title": "Transparent artwork",
+        "src": "https://fixtures.example.invalid/transparent.png"
+      },
+      {
+        "type": "image",
+        "id": 5,
+        "title": "Same URL, different ID",
+        "src": "https://fixtures.example.invalid/landscape.png"
+      },
+      {
+        "type": "image",
+        "id": 6,
+        "title": "404 image",
+        "src": "https://fixtures.example.invalid/missing.png"
+      },
+      {
+        "type": "image",
+        "id": 7,
+        "title": "HTTP 200 with invalid bytes",
+        "src": "https://fixtures.example.invalid/not-image.png"
+      }
+    ]
+  }
+]

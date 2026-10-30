@@ -1,0 +1,27 @@
+[
+  {
+    "type": "page",
+    "id": 1,
+    "title": "Local form",
+    "items": [
+      {
+        "type": "text",
+        "id": 2,
+        "content": "Metadata should not create or remove rows.",
+        "future_metadata": {
+          "required": false
+        }
+      }
+    ],
+    "version": 99,
+    "theme": {
+      "background": "#ff0000"
+    },
+    "extra": {
+      "nested": [
+        "type",
+        "video"
+      ]
+    }
+  }
+]

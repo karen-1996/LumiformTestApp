@@ -1,0 +1,47 @@
+[
+  {
+    "type": "page",
+    "id": -5,
+    "title": "Local form",
+    "items": [
+      {
+        "type": "text",
+        "id": 9223372036854775807,
+        "content": "Long.MAX_VALUE"
+      },
+      {
+        "type": "section",
+        "id": 0,
+        "title": "Zero ID",
+        "items": [
+          {
+            "type": "text",
+            "id": -9223372036854775808,
+            "content": "Long.MIN_VALUE"
+          },
+          {
+            "type": "choice",
+            "id": 9000000000,
+            "content": "Question 9000000000",
+            "response_set": {
+              "id": -1,
+              "multiple_selection": false,
+              "responses": [
+                {
+                  "id": 1,
+                  "label": "First",
+                  "score": 2147483647
+                },
+                {
+                  "id": 2,
+                  "label": "Second",
+                  "score": -2147483648
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

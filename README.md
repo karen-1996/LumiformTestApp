@@ -326,7 +326,9 @@ Networking tests also check the shared transport and logging policy. The optiona
 HTTP tests use MockWebServer and do not depend on the public endpoint. The fixture in
 `form/src/test/resources/fixtures/lumiform-android-test.json` is a snapshot of the
 [challenge endpoint](https://gist.githubusercontent.com/aruana-lumiform/383e1291df3e0cc1d49aeb14d45f5b94/raw/lumiform-android-test.json).
-It is JVM test input only and is not packaged in the app's Android resources.
+The sample and the [local edge-case scenarios](form/src/test/resources/fixtures/scenarios/README.md)
+are test input only. JVM tests read them as resources, and device tests read the
+same files from test APK assets. They are not packaged in the production app.
 
 With an emulator or device connected:
 

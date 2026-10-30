@@ -1,0 +1,14 @@
+[
+  {
+    "type": "page",
+    "id": 1,
+    "title": "Local form",
+    "items": [
+      {
+        "type": "text",
+        "id": 2,
+        "content": null
+      }
+    ]
+  }
+]
