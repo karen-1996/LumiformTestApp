@@ -5,6 +5,7 @@ import com.lumiformtest.form.domain.model.FormDocument
 import com.lumiformtest.form.domain.model.FormItem
 import com.lumiformtest.form.domain.model.ResponseOption
 import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.JsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertThrows
@@ -153,6 +154,23 @@ class FormJsonParserTest {
         missingFields.forEach { content ->
             assertThrows(InvalidFormContentException::class.java) { parser.parse(content) }
         }
+    }
+
+    @Test
+    fun `nesting limit accepts its boundary and rejects the next level`() {
+        fun payload(levels: Int): String {
+            val metadata = "[".repeat(levels) + "0" + "]".repeat(levels)
+            return """[{"type":"page","id":1,"title":"Page","items":[],"metadata":$metadata}]"""
+        }
+        assertEquals(1, parser.parse(payload(126)).pages.size)
+        assertThrows(InvalidFormContentException::class.java) { parser.parse(payload(127)) }
+    }
+
+    @Test
+    fun `nesting guard ignores brackets and escaped quotes inside text`() {
+        val text = "[ { \\\"quoted\\\" } ] \\".repeat(200)
+        val form = parser.parse(page("""{"type":"text","id":2,"content":${JsonPrimitive(text)}}"""))
+        assertEquals(text, (form.pages.single().items.single() as FormItem.Text).text)
     }
 
     @Test
