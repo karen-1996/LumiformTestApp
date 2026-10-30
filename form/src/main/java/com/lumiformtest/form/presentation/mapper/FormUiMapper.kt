@@ -63,6 +63,7 @@ internal class FormUiMapper @Inject constructor() {
 
     fun map(failure: FormRefreshFailure): FormRefreshFailureUi = when (failure) {
         FormRefreshFailure.FETCH -> FormRefreshFailureUi.FETCH
+        FormRefreshFailure.OFFLINE -> FormRefreshFailureUi.OFFLINE
         FormRefreshFailure.INVALID_CONTENT -> FormRefreshFailureUi.INVALID_CONTENT
         FormRefreshFailure.STORAGE -> FormRefreshFailureUi.STORAGE
     }

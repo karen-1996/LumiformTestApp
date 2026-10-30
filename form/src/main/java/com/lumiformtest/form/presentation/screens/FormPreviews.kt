@@ -26,6 +26,10 @@ private fun EmptyPreview() = PreviewForm(FormUiState(content = FormPreviewData.c
 @Composable
 private fun ErrorPreview() = PreviewForm(FormUiState(isReadingCache = false, refreshFailure = FormRefreshFailureUi.FETCH))
 
+@Preview(name = "No internet connection", showBackground = true)
+@Composable
+private fun OfflinePreview() = PreviewForm(FormUiState(isReadingCache = false, refreshFailure = FormRefreshFailureUi.OFFLINE))
+
 @Preview(name = "Cached form · failed refresh", showBackground = true)
 @Composable
 private fun CachedFailurePreview() = PreviewForm(FormUiState(

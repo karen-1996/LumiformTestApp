@@ -118,6 +118,7 @@ class FormViewModelTest {
     fun `all refresh failures retain the saved snapshot and update time`() = runTest(dispatcher) {
         for ((reason, uiReason) in listOf(
             FormRefreshFailure.FETCH to FormRefreshFailureUi.FETCH,
+            FormRefreshFailure.OFFLINE to FormRefreshFailureUi.OFFLINE,
             FormRefreshFailure.INVALID_CONTENT to FormRefreshFailureUi.INVALID_CONTENT,
             FormRefreshFailure.STORAGE to FormRefreshFailureUi.STORAGE
         )) {

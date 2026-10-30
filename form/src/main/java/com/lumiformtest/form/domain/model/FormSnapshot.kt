@@ -13,4 +13,4 @@ internal sealed interface RefreshFormResult {
     data class Failure(val reason: FormRefreshFailure) : RefreshFormResult
 }
 
-internal enum class FormRefreshFailure { FETCH, INVALID_CONTENT, STORAGE }
+internal enum class FormRefreshFailure { FETCH, OFFLINE, INVALID_CONTENT, STORAGE }

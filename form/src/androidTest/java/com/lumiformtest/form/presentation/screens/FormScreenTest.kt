@@ -127,6 +127,22 @@ class FormScreenTest {
     }
 
     @Test
+    fun offlineFailuresShowNoInternetWhileOtherFailuresKeepTheirMessage() {
+        var state by mutableStateOf(FormUiState(isReadingCache = false, refreshFailure = FormRefreshFailureUi.OFFLINE))
+        compose.setContent { LumiformTestAppTheme { FormScreen(state, {}) } }
+        val offline = compose.activity.getString(R.string.no_internet_connection)
+        val generic = compose.activity.getString(R.string.form_load_error)
+        compose.onNodeWithText(offline).assertIsDisplayed()
+        compose.onNodeWithText(generic).assertDoesNotExist()
+        compose.runOnIdle { state = state.copy(content = content) }
+        compose.onNodeWithText(offline).assertIsDisplayed()
+        compose.onNodeWithText("Main page").assertIsDisplayed()
+        compose.runOnIdle { state = state.copy(content = null, refreshFailure = FormRefreshFailureUi.FETCH) }
+        compose.onNodeWithText(generic).assertIsDisplayed()
+        compose.onNodeWithText(offline).assertDoesNotExist()
+    }
+
+    @Test
     fun savedContentStaysVisibleDuringRefreshAndFailure() {
         var state by mutableStateOf(FormUiState(content = content, isReadingCache = false, isRefreshing = true))
         compose.setContent { LumiformTestAppTheme { FormScreen(state, {}) } }

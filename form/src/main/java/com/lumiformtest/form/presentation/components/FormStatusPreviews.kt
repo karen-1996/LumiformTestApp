@@ -27,6 +27,12 @@ private fun FailedRefreshStatusPreview() = PreviewStatus(FormUiState(
     content = FormPreviewData.content, isReadingCache = false, refreshFailure = FormRefreshFailureUi.FETCH
 ), darkTheme = true)
 
+@Preview(name = "Saved form · offline", showBackground = true)
+@Composable
+private fun OfflineStatusPreview() = PreviewStatus(FormUiState(
+    content = FormPreviewData.content, isReadingCache = false, refreshFailure = FormRefreshFailureUi.OFFLINE
+))
+
 @Preview(name = "Saved read failed", showBackground = true, widthDp = 320, fontScale = 1.5f)
 @Composable
 private fun FailedReadStatusPreview() = PreviewStatus(FormUiState(

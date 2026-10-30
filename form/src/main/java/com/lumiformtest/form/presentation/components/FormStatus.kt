@@ -56,12 +56,14 @@ internal fun formFailureMessage(state: FormUiState): String = stringResource(
         if (state.content == null) R.string.form_read_error else R.string.form_cached_read_error
     } else if (state.content == null) {
         when (state.refreshFailure) {
+            FormRefreshFailureUi.OFFLINE -> R.string.no_internet_connection
             FormRefreshFailureUi.INVALID_CONTENT -> R.string.form_invalid_content
             FormRefreshFailureUi.STORAGE -> R.string.form_save_error
             else -> R.string.form_load_error
         }
     } else {
         when (state.refreshFailure) {
+            FormRefreshFailureUi.OFFLINE -> R.string.no_internet_connection
             FormRefreshFailureUi.INVALID_CONTENT -> R.string.form_cached_invalid_content
             FormRefreshFailureUi.STORAGE -> R.string.form_cached_save_error
             else -> R.string.form_cached_refresh_error

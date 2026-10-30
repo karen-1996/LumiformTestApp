@@ -1,19 +1,28 @@
 package com.lumiformtest.form.data.remote
 
 import com.lumiformtest.form.data.mapper.FormDataMapper
+import com.lumiformtest.networking.NetworkConnectivity
+import dagger.Lazy
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import retrofit2.HttpException
 import retrofit2.Retrofit
+import retrofit2.Response
+import okhttp3.ResponseBody
 
 class RetrofitFormRemoteDataSourceTest {
     private val server = MockWebServer()
@@ -45,7 +54,9 @@ class RetrofitFormRemoteDataSourceTest {
     fun `an unsuccessful HTTP response is a fetch failure`() {
         server.enqueue(MockResponse.Builder().code(503).body("Unavailable").build())
 
-        assertThrows(HttpException::class.java) { runBlocking { source().fetchForm() } }
+        assertThrows(HttpException::class.java) {
+            runBlocking { source(Lazy { error("HTTP errors should not query connectivity") }).fetchForm() }
+        }
     }
 
     @Test
@@ -68,11 +79,47 @@ class RetrofitFormRemoteDataSourceTest {
         server.close()
         serverClosed = true
 
-        assertThrows(IOException::class.java) { runBlocking { source.fetchForm() } }
+        val failure = assertThrows(IOException::class.java) { runBlocking { source.fetchForm() } }
+        assertFalse(failure is NoInternetConnectionException)
     }
 
-    private fun source(): RetrofitFormRemoteDataSource {
+    @Test
+    fun `a transport failure without internet gets a distinct offline cause`() {
+        val source = source(Lazy { NetworkConnectivity { false } })
+        server.close()
+        serverClosed = true
+        val failure = assertThrows(NoInternetConnectionException::class.java) { runBlocking { source.fetchForm() } }
+        assertTrue(failure.cause is IOException)
+    }
+
+    @Test
+    fun `cancelled requests do not query connectivity or become offline failures`() = runBlocking {
+        var connectivityCreated = false
+        val api = object : FormApi {
+            override suspend fun fetchForm(): Response<ResponseBody> {
+                currentCoroutineContext().cancel()
+                throw IOException("Cancelled transport")
+            }
+        }
+        val source = RetrofitFormRemoteDataSource(api, FormJsonParser(FormDataMapper()), Dispatchers.IO, Lazy {
+            connectivityCreated = true
+            NetworkConnectivity { false }
+        })
+        val request = launch { source.fetchForm() }
+        request.join()
+        assertTrue(request.isCancelled)
+        assertFalse(connectivityCreated)
+    }
+
+    @Test
+    fun `successful requests do not depend on or initialize the connectivity checker`() = runBlocking {
+        server.enqueue(MockResponse.Builder().body("[]").build())
+        val source = source(Lazy { error("A successful request must not initialize connectivity") })
+        assertTrue(source.fetchForm().pages.isEmpty())
+    }
+
+    private fun source(connectivity: Lazy<NetworkConnectivity> = Lazy { NetworkConnectivity { true } }): RetrofitFormRemoteDataSource {
         val api = Retrofit.Builder().baseUrl(server.url("/")).build().create(FormApi::class.java)
-        return RetrofitFormRemoteDataSource(api, FormJsonParser(FormDataMapper()), Dispatchers.IO)
+        return RetrofitFormRemoteDataSource(api, FormJsonParser(FormDataMapper()), Dispatchers.IO, connectivity)
     }
 }

@@ -4,6 +4,7 @@ import com.lumiformtest.form.data.local.FormLocalDataSource
 import com.lumiformtest.form.data.local.FormStorageException
 import com.lumiformtest.form.data.remote.FormRemoteDataSource
 import com.lumiformtest.form.data.remote.InvalidFormContentException
+import com.lumiformtest.form.data.remote.NoInternetConnectionException
 import com.lumiformtest.form.domain.model.FormRefreshFailure
 import com.lumiformtest.form.domain.model.FormObservation
 import com.lumiformtest.form.domain.model.FormSnapshot
@@ -45,6 +46,8 @@ internal class OfflineFormRepository @Inject constructor(
         // Fetch and validate first. A failed request must not clear saved content.
         val document = try {
             remote.fetchForm()
+        } catch (_: NoInternetConnectionException) {
+            return@withLock RefreshFormResult.Failure(FormRefreshFailure.OFFLINE)
         } catch (_: IOException) {
             return@withLock RefreshFormResult.Failure(FormRefreshFailure.FETCH)
         } catch (_: HttpException) {

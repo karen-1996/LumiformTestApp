@@ -4,6 +4,7 @@ import com.lumiformtest.form.data.local.FormLocalDataSource
 import com.lumiformtest.form.data.local.FormStorageException
 import com.lumiformtest.form.data.remote.FormRemoteDataSource
 import com.lumiformtest.form.data.remote.InvalidFormContentException
+import com.lumiformtest.form.data.remote.NoInternetConnectionException
 import com.lumiformtest.form.domain.model.FormObservation
 import com.lumiformtest.form.domain.model.ChoiceOption
 import com.lumiformtest.form.domain.model.ChoiceSelectionResult
@@ -77,6 +78,7 @@ class OfflineFormRepositoryTest {
     fun `fetch and content failures preserve saved content and the successful refresh time`() = runTest {
         val failures = listOf(
             IOException("Offline") to FormRefreshFailure.FETCH,
+            NoInternetConnectionException(IOException("Disconnected")) to FormRefreshFailure.OFFLINE,
             HttpException(Response.error<Any>(503, "Unavailable".toResponseBody())) to FormRefreshFailure.FETCH,
             InvalidFormContentException("Invalid") to FormRefreshFailure.INVALID_CONTENT
         )

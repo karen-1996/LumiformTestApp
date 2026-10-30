@@ -198,8 +198,13 @@ Repeated refresh taps are coalesced while work is active. Choice taps use one
 FIFO writer so suspended writes cannot reorder accepted input. Cache reads and refresh
 have separate state: a fast fetch failure cannot hide a pending cache read, and
 refresh success waits for Room rather than publishing response content directly.
-Saved content and its timestamp remain visible on refresh failure. Messages do not
-infer connectivity from request failures. The list uses stable IDs and saved scroll
+Saved content and its timestamp remain visible on refresh failure. After a transport
+failure, the data source checks the network status supplied by `:networking`.
+When Android reports no validated internet connection, the screen shows "No internet
+connection". Other request failures keep the existing message. This check does not
+block successful requests or turn cancellation into an offline error. Network-state
+capabilities follow the [Android connectivity guidance](https://developer.android.com/develop/connectivity/network-ops/reading-network-state).
+The list uses stable IDs and saved scroll
 state; indentation and section typography have readable lower bounds. Pure
 presentation mapping reuses flattened rows when only selections change, replacing
 only affected choice rows.
