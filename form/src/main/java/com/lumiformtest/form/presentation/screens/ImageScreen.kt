@@ -29,6 +29,7 @@ import com.lumiformtest.form.presentation.model.ImageUiModel
 import com.lumiformtest.form.presentation.navigation.sharedImageModifier
 import com.lumiformtest.form.presentation.preview.FormPreviewTheme
 import com.lumiformtest.form.presentation.viewmodel.ImageUiState
+import com.lumiformtest.form.presentation.navigation.imageTransitionViewport
 import com.lumiformtest.resources.R
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -47,23 +48,27 @@ internal fun ImageScreen(state: ImageUiState, onBack: () -> Unit, onRetry: () ->
             )
         }
     ) { innerPadding ->
-        Column(Modifier.fillMaxSize().padding(innerPadding).padding(20.dp)) {
-            state.image?.let {
-                // Keep a long title readable without leaving no room for the image.
-                Text(it.title, style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.heightIn(max = 140.dp).verticalScroll(rememberScrollState()).padding(bottom = 12.dp))
-            }
-            Box(Modifier.weight(1f).fillMaxSize(), contentAlignment = Alignment.Center) {
-                when {
-                    state.hasReadFailure -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(stringResource(R.string.image_read_error))
-                        TextButton(onClick = onRetry, enabled = !state.isLoading) { Text(stringResource(R.string.form_retry)) }
+        Box(Modifier.padding(innerPadding)) {
+            Box(Modifier.fillMaxSize().imageTransitionViewport()) {
+                Column(Modifier.fillMaxSize().padding(20.dp)) {
+                    state.image?.let {
+                        // Keep a long title readable without leaving no room for the image.
+                        Text(it.title, style = MaterialTheme.typography.titleLarge,
+                            modifier = Modifier.heightIn(max = 140.dp).verticalScroll(rememberScrollState()).padding(bottom = 12.dp))
                     }
-                    state.image != null -> FormImage(
-                        state.image.url, state.image.title, Modifier.sharedImageModifier(state.image.id).fillMaxSize()
-                    )
-                    state.isLoading -> CircularProgressIndicator()
-                    else -> Text(stringResource(R.string.image_unavailable))
+                    Box(Modifier.weight(1f).fillMaxSize(), contentAlignment = Alignment.Center) {
+                        when {
+                            state.hasReadFailure -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(stringResource(R.string.image_read_error))
+                                TextButton(onClick = onRetry, enabled = !state.isLoading) { Text(stringResource(R.string.form_retry)) }
+                            }
+                            state.image != null -> FormImage(
+                                state.image.url, state.image.title, Modifier.sharedImageModifier(state.image.id).fillMaxSize()
+                            )
+                            state.isLoading -> CircularProgressIndicator()
+                            else -> Text(stringResource(R.string.image_unavailable))
+                        }
+                    }
                 }
             }
         }

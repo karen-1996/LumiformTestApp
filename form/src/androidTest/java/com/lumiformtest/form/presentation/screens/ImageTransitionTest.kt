@@ -24,6 +24,9 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToKey
+import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
@@ -31,6 +34,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.lumiformtest.design.theme.LumiformTestAppTheme
 import com.lumiformtest.form.FormScreenTestActivity
 import com.lumiformtest.form.presentation.model.ImageUiModel
+import com.lumiformtest.form.presentation.model.FormRowUiModel
 import com.lumiformtest.form.presentation.navigation.FormDestination
 import com.lumiformtest.form.presentation.navigation.ProvideImageTransition
 import com.lumiformtest.form.presentation.navigation.rememberFormImageTransitionState
@@ -157,6 +161,91 @@ class ImageTransitionTest {
         val left = kotlin.math.ceil(bounds.left).toInt()
         val top = kotlin.math.ceil(bounds.top).toInt() + 2
         return (0..60).first { pixels[left + it, top].luminance() > 0.9f }
+    }
+
+    @Test
+    fun partiallyHiddenThumbnailStaysBelowAppBarDuringOpenAndBack() {
+        val image = FormPreviewData.image.copy(imageUrl = "https://example.com/clipped.png")
+        val loader = ImageLoader.Builder(compose.activity).build()
+        val bitmap = Bitmap.createBitmap(512, 512, Bitmap.Config.ARGB_8888).apply { eraseColor(android.graphics.Color.MAGENTA) }
+        val cached = MemoryCache.Value(bitmap.asImage())
+        loader.memoryCache!![MemoryCache.Key("thumbnail:${image.imageUrl}")] = cached
+        loader.memoryCache!![MemoryCache.Key("viewer:${image.imageUrl}")] = cached
+        val rows = List(20) { FormRowUiModel.Text(1000L + it, 1, 1, "Before $it") } + image +
+            List(20) { FormRowUiModel.Text(2000L + it, 1, 1, "After $it") }
+        try {
+            compose.setContent {
+                val preparedLoader = rememberUpdatedState(loader)
+                CompositionLocalProvider(LocalFormImageLoader provides preparedLoader) {
+                    LumiformTestAppTheme(darkTheme = true, dynamicColor = false) {
+                        val stack = rememberNavBackStack(FormDestination.Form)
+                        val transitionState = rememberFormImageTransitionState()
+                        SharedTransitionLayout {
+                            NavDisplay(
+                                backStack = stack,
+                                transitionSpec = { fadeIn(tween(350)) togetherWith fadeOut(tween(350)) },
+                                popTransitionSpec = { fadeIn(tween(350)) togetherWith fadeOut(tween(350)) },
+                                entryProvider = entryProvider {
+                                    entry<FormDestination.Form> {
+                                        ProvideImageTransition(this@SharedTransitionLayout, transitionState) {
+                                            FormScreen(FormUiState(content = FormPreviewData.content.copy(rows = rows), isReadingCache = false), {
+                                                if (it is FormAction.OpenImage) {
+                                                    transitionState.prepare(image, loader)
+                                                    stack.add(FormDestination.Image(image.id))
+                                                }
+                                            })
+                                        }
+                                    }
+                                    entry<FormDestination.Image> {
+                                        ProvideImageTransition(this@SharedTransitionLayout, transitionState) {
+                                            ImageScreen(ImageUiState(ImageUiModel(image.id, image.title, image.imageUrl), isLoading = false),
+                                                { stack.removeLastOrNull() }, {})
+                                        }
+                                    }
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+            val list = compose.onNodeWithTag("form_list")
+            val density = compose.activity.resources.displayMetrics.density
+            list.performScrollToKey(image.id)
+            list.performSemanticsAction(SemanticsActions.ScrollBy) { it(0f, 40f * density) }
+            val top = list.fetchSemanticsNode().boundsInRoot.top
+            val thumbnail = compose.onNodeWithTag("image_thumbnail_${image.id}")
+            val originalTop = thumbnail.getUnclippedBoundsInRoot().top.value * density
+            assertTrue("The test must start with part of the thumbnail hidden under the bar", originalTop < top - 5)
+            thumbnail.assertIsDisplayed()
+            compose.mainClock.autoAdvance = false
+            thumbnail.performClick()
+            for (time in listOf(32L, 32L, 64L, 96L, 96L, 64L)) {
+                compose.mainClock.advanceTimeBy(time)
+                assertImageBelowBar(top)
+            }
+            compose.mainClock.advanceTimeBy(500)
+            compose.onNodeWithContentDescription(compose.activity.getString(R.string.back)).performClick()
+            for (time in listOf(32L, 32L, 64L, 96L, 96L, 64L)) {
+                compose.mainClock.advanceTimeBy(time)
+                assertImageBelowBar(top)
+            }
+            compose.mainClock.advanceTimeBy(500)
+            assertEquals(originalTop, thumbnail.getUnclippedBoundsInRoot().top.value * density, 1f)
+        } finally { loader.shutdown() }
+    }
+
+    private fun assertImageBelowBar(top: Float) {
+        compose.waitForIdle()
+        val pixels = compose.onRoot().captureToImage().toPixelMap()
+        var visiblePixels = 0
+        for (y in 0 until pixels.height step 8) for (x in 0 until pixels.width step 8) {
+            val color = pixels[x, y]
+            if (color.red > 0.9f && color.blue > 0.9f && color.green < 0.1f) {
+                assertTrue("The moving image must not draw over the app bar at ($x, $y), boundary=$top", y >= top - 1)
+                visiblePixels++
+            }
+        }
+        assertTrue("The moving image should remain visible below the bar", visiblePixels > 0)
     }
 
     @Test

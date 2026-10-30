@@ -11,22 +11,32 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import coil3.memory.MemoryCache
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.lookaheadScopeCoordinates
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
 
 private class ImageTransitionScopes(
     val shared: SharedTransitionScope,
     val visibility: AnimatedVisibilityScope,
     val state: FormImageTransitionState
-)
+) {
+    var viewport: LayoutCoordinates? by mutableStateOf(null)
+}
 
 private val LocalImageTransition = compositionLocalOf<ImageTransitionScopes?> { null }
 
@@ -35,6 +45,12 @@ internal fun ProvideImageTransition(shared: SharedTransitionScope, state: FormIm
     val visibility = LocalNavAnimatedContentScope.current
     val scopes = remember(shared, visibility, state) { ImageTransitionScopes(shared, visibility, state) }
     CompositionLocalProvider(LocalImageTransition provides scopes, content = content)
+}
+
+@Composable
+internal fun Modifier.imageTransitionViewport(): Modifier {
+    val scopes = LocalImageTransition.current ?: return this
+    return onGloballyPositioned { scopes.viewport = it }
 }
 
 @Composable
@@ -57,11 +73,31 @@ internal fun Modifier.sharedImageModifier(imageId: Long, isThumbnail: Boolean = 
             }
         }
     }
+    val viewportClip = remember(scopes) {
+        object : SharedTransitionScope.OverlayClip {
+            private val path = Path()
+
+            override fun getClipPath(
+                sharedContentState: SharedTransitionScope.SharedContentState,
+                bounds: Rect,
+                layoutDirection: LayoutDirection,
+                density: Density
+            ): Path? {
+                val viewport = scopes.viewport?.takeIf { it.isAttached } ?: return null
+                // The overlay escapes list clipping, so keep it below the screen's app bar.
+                val area = scopes.shared.lookaheadScopeCoordinates(viewport).localBoundingBoxOf(viewport, clipBounds = false)
+                path.reset()
+                path.addRect(area)
+                return path
+            }
+        }
+    }
     return with(scopes.shared) {
         this@sharedImageModifier.sharedElement(
             sharedContentState = rememberSharedContentState(key = "form-image-$imageId"),
             animatedVisibilityScope = scopes.visibility,
-            boundsTransform = { _, _ -> tween(350) }
+            boundsTransform = { _, _ -> tween(350) },
+            clipInOverlayDuringTransition = viewportClip
         ).clip(shape)
     }
 }

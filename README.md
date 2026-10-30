@@ -225,6 +225,8 @@ carries only the image ID. The same image layout stays in place while its bounds
 and corner shape animate together. A loaded bitmap stays visible during motion;
 the larger original is decoded afterward, with the thumbnail covering the handoff.
 Back uses the cached viewer bitmap when available.
+The shared overlay is clipped to the screen's content viewport, so a partly hidden
+thumbnail stays behind the app bar during opening and closing.
 
 A temporary UI preview carries the clicked image metadata and prepared loader
 into the viewer, so reading Room does not insert a loading screen into the motion.
@@ -338,6 +340,8 @@ Clock-controlled checks verify expansion/shrink bounds, intermediate corner shap
 and return to the thumbnail's position. A real Coil test delays saved metadata and
 the original image, checking that the loaded thumbnail stays visible through the
 animation and decoder handoff, while saved read errors still take priority.
+Another pixel check scrolls a thumbnail partly under the app bar and verifies
+that image pixels stay out of the bar throughout both navigation directions.
 List tests check anchor retention when rows above it are inserted/removed and
 focus/selection identity when response options reorder.
 A real Coil pipeline test loads a thumbnail, closes its loader, and uses a new

@@ -39,6 +39,7 @@ import com.lumiformtest.form.presentation.viewmodel.FormAction
 import com.lumiformtest.form.presentation.viewmodel.FormUiState
 import com.lumiformtest.form.presentation.model.ChoiceOptionUiInput
 import com.lumiformtest.form.presentation.model.ChoiceWriteFailureReasonUi
+import com.lumiformtest.form.presentation.navigation.imageTransitionViewport
 import com.lumiformtest.resources.R
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -90,32 +91,34 @@ internal fun FormScreen(
             )
         }
     ) { innerPadding ->
-        LazyColumn(
-            state = listState,
-            modifier = Modifier.fillMaxSize().padding(innerPadding).testTag("form_list"),
-            contentPadding = PaddingValues(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            item(key = "status", contentType = "status") { FormStatus(state) }
-            when {
-                state.isLoading -> item(key = "loading", contentType = "loading") {
-                    Box(Modifier.fillMaxWidth().padding(48.dp), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(Modifier.testTag("form_loading"))
-                    }
-                }
-                state.content != null -> {
-                    if (state.content.rows.isEmpty()) {
-                        item(key = "empty", contentType = "empty") {
-                            Text(stringResource(R.string.form_empty), style = MaterialTheme.typography.bodyLarge)
+        Box(Modifier.padding(innerPadding)) {
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxSize().imageTransitionViewport().testTag("form_list"),
+                contentPadding = PaddingValues(20.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                item(key = "status", contentType = "status") { FormStatus(state) }
+                when {
+                    state.isLoading -> item(key = "loading", contentType = "loading") {
+                        Box(Modifier.fillMaxWidth().padding(48.dp), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(Modifier.testTag("form_loading"))
                         }
                     }
-                    // Saved node IDs are unique, so refresh can keep each row's scroll state.
-                    items(state.content.rows, key = { it.id }, contentType = { it::class }) { row ->
-                        FormRow(row, choicesEnabled, onImageClick = openImage, onChoiceClick = selectOption)
+                    state.content != null -> {
+                        if (state.content.rows.isEmpty()) {
+                            item(key = "empty", contentType = "empty") {
+                                Text(stringResource(R.string.form_empty), style = MaterialTheme.typography.bodyLarge)
+                            }
+                        }
+                        // Saved node IDs are unique, so refresh can keep each row's scroll state.
+                        items(state.content.rows, key = { it.id }, contentType = { it::class }) { row ->
+                            FormRow(row, choicesEnabled, onImageClick = openImage, onChoiceClick = selectOption)
+                        }
                     }
-                }
-                else -> item(key = "error", contentType = "error") {
-                    Text(formFailureMessage(state), style = MaterialTheme.typography.bodyLarge)
+                    else -> item(key = "error", contentType = "error") {
+                        Text(formFailureMessage(state), style = MaterialTheme.typography.bodyLarge)
+                    }
                 }
             }
         }
