@@ -2,6 +2,11 @@
 
 My implementation of the Lumiform Android coding challenge.
 
+The current test baseline has **132 JVM tests** and **62 device tests**, all passing.
+Focused JVM logic coverage is **98.1% of lines** and **91.3% of branches**, with an
+**80% line-coverage gate**. See [Coverage](#coverage) for the measured scope,
+exclusions, device results, and commands to reproduce the reports.
+
 ## Status
 
 The foundation includes feature modules, my custom MVI base, Hilt, and Navigation 3.
@@ -391,6 +396,89 @@ active network, a force-stop/relaunch loaded thumbnails and opened the titled
 viewer. Back restored the exact scrolled form position. The open viewer also
 returned from Recents after the background app process was killed, while still
 offline. These are manual emulator checks, separate from saved-state UI tests.
+
+## Coverage
+
+Coverage uses [AGP's built-in JaCoCo support](https://developer.android.com/studio/test/coverage-report),
+with the version pinned in the version catalog. It is opt-in with `-Pcoverage=true`
+and applies only to debug. Normal debug APKs have no coverage instrumentation.
+
+Baseline measured locally on **2026-10-31**:
+
+| Measurement | Result |
+| --- | --- |
+| JVM logic line coverage | **98.1%** — 673/686 lines |
+| JVM logic branch coverage | **91.3%** — 263/288 branches |
+| JVM tests | **132 passed** |
+| Device tests | **62 passed** |
+| Device-only line coverage, `:app` | **74.9%** |
+| Device-only line coverage, `:form` | **73.5%** |
+
+The JVM percentages describe the non-UI logic scope below. UI rendering and
+Android integration have separate device tests. These are recorded results,
+not a live CI badge; regenerate the reports after code changes.
+
+Run the JVM suites, generate reports, and enforce the 80% line-coverage minimum:
+
+```shell
+./gradlew debugUnitTestCoverage -Pcoverage=true
+```
+
+The focused aggregate report is at `build/reports/coverage/jvm/html/index.html`,
+with XML at `build/reports/coverage/jvm/report.xml`. It merges JVM execution data
+from `:base`, `:networking`, and `:form`, using AGP's public class artifacts.
+`debugJvmCoverageCheck` enforces at least 80% **line** coverage across this scope;
+branch coverage is reported separately. To generate the focused report without
+the gate, run `debugJvmCoverageReport -Pcoverage=true`.
+Missing execution data or an empty coverage scope also fails the gate.
+
+The scope keeps handwritten JVM logic: MVI/ViewModels and contracts, domain
+models/use cases, DTO parsing/validation, repositories, mappers, response
+reconciliation, image-file caching/fetching, and the HTTP logging interceptor.
+Uncovered code in those areas stays in the denominator.
+
+Excluded from this focused JVM metric:
+
+- Compose screens, routes, components, previews, and image/navigation transitions.
+  Serializable destination keys remain included.
+- Android adapters that use Room/SQLite or BitmapFactory: DAOs, database setup,
+  migrations, the Room local data source, and bitmap validation. These have device
+  tests; the JVM metric makes no claim about their coverage.
+- DI wiring and generated Hilt/Dagger, Room implementations, resources, and BuildConfig.
+
+`:app` currently contains Android startup/navigation wiring, and `:design`
+contains Compose components/theme code, so neither belongs to this JVM logic
+scope. The exclusions are explicit in `build.gradle.kts`. Add new JVM logic/modules
+to the scope when the architecture grows.
+
+The original full-module reports remain available:
+
+| Module | HTML report |
+| --- | --- |
+| base | `base/build/reports/coverage/test/debug/index.html` |
+| networking | `networking/build/reports/coverage/test/debug/index.html` |
+| form | `form/build/reports/coverage/test/debug/index.html` |
+
+Device coverage runs the existing `:app` and `:form` instrumentation suites.
+Check connected devices first, unlock the selected device, and use its serial:
+
+```shell
+adb devices -l
+ANDROID_SERIAL=<serial> ./gradlew debugAndroidTestCoverage -Pcoverage=true
+```
+
+Reports are written under each tested module's
+`build/reports/coverage/androidTest/debug/connected/index.html`.
+For a single module, use `:form:createDebugUnitTestCoverageReport` or
+`:form:createDebugAndroidTestCoverageReport`, with the same coverage property.
+
+Unit and device reports measure different executions. Do not add or average their
+percentages. Full-module reports include UI and generated code, so their JVM
+number alone does not describe Room or Compose coverage. Use the focused aggregate
+for the 80% JVM gate and keep the full/device reports for their separate scopes.
+Coverage does not prove visual correctness or scrolling performance.
+
+Reports and execution data stay under ignored `build/` folders.
 
 ## Compose previews
 
