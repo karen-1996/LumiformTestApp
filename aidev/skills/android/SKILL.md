@@ -5,7 +5,7 @@ description: Change Android code, manifests, resources, Gradle modules, and Andr
 
 # Android
 
-- Use the existing module structure. Feature layers belong inside their feature module.
+- Place feature modules under `feature/`. Keep feature layers inside their feature module; `:form` maps to `feature/form` in settings.
 - Shared HTTP setup belongs in `:networking`: provide singleton OkHttp and Retrofit instances through Hilt. Features depend on this module and only create their own request APIs from Retrofit. Keep HTTP body logging limited to debug builds.
 - Read per-build-type base URLs from `networking.baseUrl.debug` and `networking.baseUrl.release` Gradle properties, exposed through the networking module's `BuildConfig.BASE_URL`. Keep endpoint hosts out of production Kotlin code; base URLs need a trailing slash.
 - Use AGP's built-in Kotlin support. Keep Kotlin, Compose, serialization, and KSP versions compatible; use the version catalog.
@@ -17,7 +17,7 @@ description: Change Android code, manifests, resources, Gradle modules, and Andr
 - Give resource consumers a direct `:resources` dependency and import `com.lumiformtest.resources.R`. Keep Compose theme code in `:design`.
 - Put visible text in shared string resources. Append new entries under `<!-- unchecked strings -->` in each supported locale of `:resources`.
 - Decorative images use a null content description. Meaningful controls need concise accessibility text.
-- Keep routine generated build files, local SDK paths, and IDE state outside Git. Commit exported Room schema snapshots under `form/schemas` for database version history.
+- Keep routine generated build files, local SDK paths, and IDE state outside Git. Commit exported Room schema snapshots under `feature/form/schemas` for database version history.
 
 Run relevant module checks and assemble the app when build files, manifests,
 resources, Hilt wiring, or module dependencies change. Inspect lint findings;

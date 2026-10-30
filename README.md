@@ -54,10 +54,11 @@ keeps the theme's neutral foreground; size and indentation also show the hierarc
 - `networking`: shared OkHttp client, logging interceptor, and Retrofit instance.
 - `resources`: shared Android resource files, including UI strings, icons, XML themes,
   and backup configuration.
-- `form`: form and image destinations, UI, ViewModels, and the feature's data and
-  domain layers.
+- `feature/form` (`:form`): form and image destinations, UI, ViewModels, and the
+  feature's data and domain layers.
 
 I keep the layers inside each feature, so changes to the form stay together.
+Feature modules live next to each other under `feature/`.
 There are no separate data or domain Gradle modules.
 
 Shared Android `res/` files live in `resources/src/main/res`. Modules that use them
@@ -136,7 +137,7 @@ RefreshFormUseCase provide the boundary for the MVI integration. Expected saved
 content read failures become a domain observation result; retry restarts a failed
 observer. The ViewModel does not import Room or data-layer exceptions.
 
-Schemas 1 and 2 are exported under `form/schemas` and kept in Git. The explicit
+Schemas 1 and 2 are exported under `feature/form/schemas` and kept in Git. The explicit
 1 -> 2 migration adds selections and their indexes without clearing the saved
 form. There is no destructive-migration fallback. Image URLs stay in Room;
 downloaded originals live in app-owned files.
@@ -337,9 +338,9 @@ corruption recovery, URL identity, and viewer metadata changes/removal.
 Networking tests also check the shared transport and logging policy. The optional
 :networking:testReleaseUnitTest task checks the release policy separately.
 HTTP tests use MockWebServer and do not depend on the public endpoint. The fixture in
-`form/src/test/resources/fixtures/lumiform-android-test.json` is a snapshot of the
+`feature/form/src/test/resources/fixtures/lumiform-android-test.json` is a snapshot of the
 [challenge endpoint](https://gist.githubusercontent.com/aruana-lumiform/383e1291df3e0cc1d49aeb14d45f5b94/raw/lumiform-android-test.json).
-The sample and the [local edge-case scenarios](form/src/test/resources/fixtures/scenarios/README.md)
+The sample and the [local edge-case scenarios](feature/form/src/test/resources/fixtures/scenarios/README.md)
 are test input only. JVM tests read them as resources, and device tests read the
 same files from test APK assets. They are not packaged in the production app.
 
@@ -460,7 +461,7 @@ The original full-module reports remain available:
 | --- | --- |
 | base | `base/build/reports/coverage/test/debug/index.html` |
 | networking | `networking/build/reports/coverage/test/debug/index.html` |
-| form | `form/build/reports/coverage/test/debug/index.html` |
+| form | `feature/form/build/reports/coverage/test/debug/index.html` |
 
 Device coverage runs the existing `:app` and `:form` instrumentation suites.
 Check connected devices first, unlock the selected device, and use its serial:
@@ -489,7 +490,7 @@ Each screen and visual component has named, themed previews beside its code.
 They cover content, loading/failure, selected/disabled choices, dark mode, and
 long text where relevant. Screen previews use sample UI models instead of Hilt
 routes. Shared fixtures live in
-[FormPreviewData.kt](form/src/main/java/com/lumiformtest/form/presentation/preview/FormPreviewData.kt).
+[FormPreviewData.kt](feature/form/src/main/java/com/lumiformtest/form/presentation/preview/FormPreviewData.kt).
 Image previews use a local drawable and never create the image loader or make
 network/database calls. Preview wrappers and non-visual state helpers are covered
 through their screen/component previews.

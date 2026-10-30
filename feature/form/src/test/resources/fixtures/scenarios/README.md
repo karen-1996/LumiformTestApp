@@ -10,7 +10,7 @@ The same files drive JVM checks and the instrumentation test APK's assets.
 network connection or Python packages:
 
 ```shell
-python3 form/src/test/resources/fixtures/scenarios/generate.py
+python3 feature/form/src/test/resources/fixtures/scenarios/generate.py
 ```
 
 ## Cases
