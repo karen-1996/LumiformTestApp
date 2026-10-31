@@ -1,8 +1,9 @@
 package com.lumiformtest.form.data.local
 
 import android.database.SQLException
-import com.lumiformtest.form.data.mapper.FormEntityMapper
-import com.lumiformtest.form.data.mapper.ChoiceSelectionMapper
+import com.lumiformtest.form.data.mapper.toDomain
+import com.lumiformtest.form.data.mapper.toStorage
+import com.lumiformtest.form.data.mapper.toEntity
 import com.lumiformtest.form.di.FormIoDispatcher
 import com.lumiformtest.form.domain.model.FormDocument
 import com.lumiformtest.form.domain.model.FormSnapshot
@@ -27,12 +28,10 @@ internal interface FormLocalDataSource {
 
 internal class RoomFormLocalDataSource @Inject constructor(
     private val dao: FormDao,
-    private val mapper: FormEntityMapper,
     @FormIoDispatcher private val dispatcher: CoroutineDispatcher
 ) : FormLocalDataSource {
-    private val selectionMapper by lazy { ChoiceSelectionMapper() }
     override fun observeForm(): Flow<FormSnapshot?> = dao.observeForm()
-        .map { stored -> stored?.let(mapper::toDomain) }
+        .map { it?.toDomain() }
         .catch { error ->
             if (error is SQLException) throw FormStorageException("Cannot read the saved form", error)
             throw error
@@ -41,7 +40,7 @@ internal class RoomFormLocalDataSource @Inject constructor(
         .flowOn(dispatcher)
 
     override suspend fun replaceForm(document: FormDocument, lastUpdated: Instant) = withContext(dispatcher) {
-        val stored = mapper.toStorage(document, lastUpdated)
+        val stored = document.toStorage(lastUpdated)
         try {
             dao.replaceForm(stored)
         } catch (error: SQLException) {
@@ -51,7 +50,7 @@ internal class RoomFormLocalDataSource @Inject constructor(
 
     override suspend fun toggleChoiceOption(option: ChoiceOption): ChoiceSelectionResult = withContext(dispatcher) {
         try {
-            if (dao.toggleChoiceOption(selectionMapper.toEntity(option))) ChoiceSelectionResult.Success
+            if (dao.toggleChoiceOption(option.toEntity())) ChoiceSelectionResult.Success
             else ChoiceSelectionResult.Failure(ChoiceSelectionFailure.UNAVAILABLE)
         } catch (error: SQLException) {
             throw FormStorageException("Cannot save the answer", error)

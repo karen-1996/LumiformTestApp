@@ -4,7 +4,6 @@ import androidx.room.Room
 import androidx.room.testing.MigrationTestHelper
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import com.lumiformtest.form.data.mapper.FormEntityMapper
 import com.lumiformtest.form.domain.model.ChoiceOption
 import com.lumiformtest.form.domain.model.ChoiceSelectionResult
 import java.time.Instant
@@ -49,7 +48,7 @@ class FormMigrationTest {
         fun open() = Room.databaseBuilder(context, FormDatabase::class.java, name).addMigrations(MIGRATION_1_2).build()
         var database = open()
         try {
-            val local = RoomFormLocalDataSource(database.formDao(), FormEntityMapper(), Dispatchers.IO)
+            val local = RoomFormLocalDataSource(database.formDao(), Dispatchers.IO)
             val snapshot = requireNotNull(local.observeForm().first())
             assertEquals("Saved page", snapshot.document.pages.single().title)
             assertEquals(Instant.ofEpochMilli(1234), snapshot.lastUpdated)
@@ -58,7 +57,7 @@ class FormMigrationTest {
         } finally { database.close() }
         database = open()
         try {
-            val snapshot = requireNotNull(RoomFormLocalDataSource(database.formDao(), FormEntityMapper(), Dispatchers.IO).observeForm().first())
+            val snapshot = requireNotNull(RoomFormLocalDataSource(database.formDao(), Dispatchers.IO).observeForm().first())
             assertEquals(setOf(1L), snapshot.selections[10]?.optionIds)
             assertEquals(Instant.ofEpochMilli(1234), snapshot.lastUpdated)
         } finally { database.close() }

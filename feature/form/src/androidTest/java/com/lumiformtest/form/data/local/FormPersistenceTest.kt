@@ -1,11 +1,11 @@
 package com.lumiformtest.form.data.local
 
+import com.lumiformtest.form.data.mapper.toStorage
 import android.content.Context
 import android.database.SQLException
 import androidx.room.Room
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import com.lumiformtest.form.data.mapper.FormEntityMapper
 import com.lumiformtest.form.data.remote.FormRemoteDataSource
 import com.lumiformtest.form.data.repository.OfflineFormRepository
 import com.lumiformtest.form.domain.model.FormObservation
@@ -41,7 +41,7 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class FormPersistenceTest {
     private val name = "form-persistence-test.db"
-    private val mapper by lazy { FormEntityMapper() }
+
     private val time by lazy { Instant.parse("2026-10-29T12:00:00Z") }
     private lateinit var context: Context
     private lateinit var database: FormDatabase
@@ -95,7 +95,7 @@ class FormPersistenceTest {
     @Test
     fun aForeignKeyFailureRollsBackContentAndMetadataTogether() = runBlocking {
         local().replaceForm(document(), time)
-        val replacement = mapper.toStorage(document("Replacement"), time.plusSeconds(60))
+        val replacement = document("Replacement").toStorage(time.plusSeconds(60))
         val invalid = replacement.copy(nodes = replacement.nodes.map {
             if (it.id == 9L) it.copy(parentId = 999) else it
         })
@@ -149,7 +149,7 @@ class FormPersistenceTest {
     private fun openDatabase(): FormDatabase =
         Room.databaseBuilder(context, FormDatabase::class.java, name).build()
 
-    private fun local() = RoomFormLocalDataSource(database.formDao(), mapper, Dispatchers.IO)
+    private fun local() = RoomFormLocalDataSource(database.formDao(), Dispatchers.IO)
 
     private fun document(title: String = "Saved") = FormDocument(
         listOf(

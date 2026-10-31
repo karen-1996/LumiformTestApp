@@ -29,7 +29,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.lumiformtest.design.theme.LumiformTestAppTheme
 import com.lumiformtest.form.FormScreenTestActivity
-import com.lumiformtest.form.data.mapper.FormDataMapper
 import com.lumiformtest.form.data.remote.FormJsonParser
 import com.lumiformtest.form.domain.model.FormSnapshot
 import com.lumiformtest.form.presentation.screens.form.components.ChoiceQuestion
@@ -50,7 +49,7 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class FormFixtureScreenTest {
     @get:Rule val compose = createAndroidComposeRule<FormScreenTestActivity>()
-    private val parser by lazy { FormJsonParser(FormDataMapper()) }
+    private val parser by lazy { FormJsonParser() }
     private val uiMapper by lazy { FormUiMapper() }
 
     @Test

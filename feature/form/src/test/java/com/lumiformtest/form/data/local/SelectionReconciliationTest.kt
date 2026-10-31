@@ -1,7 +1,7 @@
 package com.lumiformtest.form.data.local
 
+import com.lumiformtest.form.data.mapper.toStorage
 import com.lumiformtest.form.data.local.entity.SelectedResponseEntity
-import com.lumiformtest.form.data.mapper.FormEntityMapper
 import com.lumiformtest.form.domain.model.FormDocument
 import com.lumiformtest.form.domain.model.FormItem
 import com.lumiformtest.form.domain.model.FormPage
@@ -13,7 +13,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SelectionReconciliationTest {
-    private val mapper by lazy { FormEntityMapper() }
+
 
     @Test
     fun `shared definitions retain independent answers and ignore metadata changes`() {
@@ -60,14 +60,12 @@ class SelectionReconciliationTest {
     fun `single to multi keeps the existing answer and empty content removes all answers`() {
         val previous = listOf(SelectedResponseEntity(10, 100, 1))
         assertEquals(previous, reconcileSelections(previous, stored(choice(10, set(true, listOf(1, 2))))))
-        assertTrue(reconcileSelections(previous, mapper.toStorage(FormDocument(emptyList()), Instant.EPOCH)).isEmpty())
+        assertTrue(reconcileSelections(previous, FormDocument(emptyList()).toStorage(Instant.EPOCH)).isEmpty())
     }
 
     private fun choice(id: Long, set: ResponseSet) = FormItem.Choice(id, "Updated question $id", set)
     private fun set(multiple: Boolean, options: List<Int>, id: Long = 100) = ResponseSet(
         id, multiple, options.map { ResponseOption(it.toLong(), "Updated $it", null) }
     )
-    private fun stored(vararg items: FormItem) = mapper.toStorage(
-        FormDocument(listOf(FormPage(1, "Page", items.toList()))), Instant.EPOCH
-    )
+    private fun stored(vararg items: FormItem) = FormDocument(listOf(FormPage(1, "Page", items.toList()))).toStorage(Instant.EPOCH)
 }

@@ -102,7 +102,7 @@ class RetrofitFormRemoteDataSourceTest {
                 throw IOException("Cancelled transport")
             }
         }
-        val source = RetrofitFormRemoteDataSource(api, FormJsonParser(com.lumiformtest.form.data.mapper.FormDataMapper()), Dispatchers.IO, Lazy {
+        val source = RetrofitFormRemoteDataSource(api, FormJsonParser(), Dispatchers.IO, Lazy {
             connectivityCreated = true
             NetworkConnectivity { false }
         })
@@ -135,6 +135,6 @@ class RetrofitFormRemoteDataSourceTest {
 
     private fun source(connectivity: Lazy<NetworkConnectivity> = Lazy { NetworkConnectivity { true } }): RetrofitFormRemoteDataSource {
         val api = Retrofit.Builder().baseUrl(server.url("/")).client(client).build().create(FormApi::class.java)
-        return RetrofitFormRemoteDataSource(api, FormJsonParser(com.lumiformtest.form.data.mapper.FormDataMapper()), Dispatchers.IO, connectivity)
+        return RetrofitFormRemoteDataSource(api, FormJsonParser(), Dispatchers.IO, connectivity)
     }
 }

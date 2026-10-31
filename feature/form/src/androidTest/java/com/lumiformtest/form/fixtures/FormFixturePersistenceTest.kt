@@ -6,8 +6,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.lumiformtest.form.data.local.FormDatabase
 import com.lumiformtest.form.data.local.RoomFormLocalDataSource
-import com.lumiformtest.form.data.mapper.FormDataMapper
-import com.lumiformtest.form.data.mapper.FormEntityMapper
 import com.lumiformtest.form.data.remote.FormJsonParser
 import com.lumiformtest.form.data.remote.FormRemoteDataSource
 import com.lumiformtest.form.data.repository.OfflineFormRepository
@@ -32,8 +30,8 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class FormFixturePersistenceTest {
     private val databaseName = "fixture-scenarios-test.db"
-    private val parser by lazy { FormJsonParser(FormDataMapper()) }
-    private val mapper by lazy { FormEntityMapper() }
+    private val parser by lazy { FormJsonParser() }
+
     private val time by lazy { Instant.parse("2026-10-30T12:00:00Z") }
     private lateinit var context: Context
     private lateinit var database: FormDatabase
@@ -53,7 +51,7 @@ class FormFixturePersistenceTest {
 
     @Test
     fun acceptedFixturesSurviveRealDatabaseCloseAndReopen() = runBlocking {
-        for (fixture in FormFixture.cases(::read).filter { it.accepted }) {
+        for ((index, fixture) in FormFixture.cases(::read).filter { it.accepted }.withIndex()) {
             val document = parser.parse(read(fixture.path))
             local().replaceForm(document, time)
             database.close()
@@ -111,7 +109,7 @@ class FormFixturePersistenceTest {
         .bufferedReader().use { it.readText() }
     private fun parse(file: String) = parser.parse(read("${FormFixture.ROOT}/$file"))
     private fun open() = Room.databaseBuilder(context, FormDatabase::class.java, databaseName).build()
-    private fun local() = RoomFormLocalDataSource(database.formDao(), mapper, Dispatchers.IO)
+    private fun local() = RoomFormLocalDataSource(database.formDao(), Dispatchers.IO)
     private suspend fun snapshot() = requireNotNull(local().observeForm().first())
     private suspend fun tap(question: Long, set: Long, option: Long) {
         assertEquals(ChoiceSelectionResult.Success, local().toggleChoiceOption(ChoiceOption(question, set, option)))

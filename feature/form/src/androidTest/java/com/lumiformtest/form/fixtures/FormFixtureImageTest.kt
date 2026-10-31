@@ -25,7 +25,6 @@ import com.lumiformtest.design.theme.LumiformTestAppTheme
 import com.lumiformtest.form.FormScreenTestActivity
 import com.lumiformtest.form.data.local.BitmapImageFileValidator
 import com.lumiformtest.form.data.local.ImageFileStore
-import com.lumiformtest.form.data.mapper.FormDataMapper
 import com.lumiformtest.form.data.remote.FormJsonParser
 import com.lumiformtest.form.data.remote.ImageApi
 import com.lumiformtest.form.data.remote.StoredImageFetcher
@@ -66,7 +65,7 @@ class FormFixtureImageTest {
         val context = compose.activity
         val body = InstrumentationRegistry.getInstrumentation().context.assets
             .open("${FormFixture.ROOT}/valid/image-variants.json").bufferedReader().use { it.readText() }
-        val content = FormUiMapper().map(FormSnapshot(FormJsonParser(FormDataMapper()).parse(body), Instant.EPOCH))
+        val content = FormUiMapper().map(FormSnapshot(FormJsonParser().parse(body), Instant.EPOCH))
         val images = content.rows.filterIsInstance<FormRowUiModel.Image>()
         val directory = File(context.filesDir, "fixture-images-${System.nanoTime()}")
         val recovered = AtomicBoolean(false)

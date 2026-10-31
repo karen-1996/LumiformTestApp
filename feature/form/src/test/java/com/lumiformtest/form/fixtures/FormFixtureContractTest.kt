@@ -1,11 +1,11 @@
 package com.lumiformtest.form.fixtures
 
-import com.lumiformtest.form.data.mapper.FormDataMapper
-import com.lumiformtest.form.data.mapper.FormEntityMapper
+import com.lumiformtest.form.data.mapper.toDomain
+import com.lumiformtest.form.data.mapper.toStorage
+import com.lumiformtest.form.presentation.screens.form.mapper.FormUiMapper
 import com.lumiformtest.form.data.remote.FormJsonParser
 import com.lumiformtest.form.data.remote.InvalidFormContentException
 import com.lumiformtest.form.domain.model.FormSnapshot
-import com.lumiformtest.form.presentation.screens.form.mapper.FormUiMapper
 import java.time.Instant
 import kotlin.random.Random
 import org.junit.Assert.assertEquals
@@ -16,8 +16,8 @@ import org.junit.runners.Parameterized
 
 @RunWith(Parameterized::class)
 internal class FormFixtureContractTest(private val fixture: FormFixture) {
-    private val parser by lazy { FormJsonParser(FormDataMapper()) }
-    private val mapper by lazy { FormEntityMapper() }
+    private val parser by lazy { FormJsonParser() }
+
 
     @Test
     fun fixtureMatchesItsContractAcrossDataDomainAndUi() {
@@ -28,11 +28,11 @@ internal class FormFixtureContractTest(private val fixture: FormFixture) {
         }
         val document = parser.parse(body)
         val snapshot = FormSnapshot(document, Instant.parse("2026-10-30T12:00:00Z"))
-        val stored = mapper.toStorage(document, snapshot.lastUpdated)
+        val stored = document.toStorage(snapshot.lastUpdated)
         // Room can return relations in any order; stored positions own display order.
         val shuffled = stored.copy(nodes = stored.nodes.shuffled(Random(42)),
             responseSets = stored.responseSets.reversed().map { it.copy(responses = it.responses.reversed()) })
-        assertEquals(fixture.file, snapshot, mapper.toDomain(shuffled))
+        assertEquals(fixture.file, snapshot, shuffled.toDomain())
         val ui = FormUiMapper().map(snapshot)
         assertEquals(fixture.file, fixture.pages, document.pages.size)
         assertEquals(fixture.file, fixture.rows, ui.rows.size)

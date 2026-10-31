@@ -1,11 +1,11 @@
 package com.lumiformtest.form.data.local
 
+import com.lumiformtest.form.data.mapper.toStorage
 import android.content.Context
 import android.database.SQLException
 import androidx.room.Room
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import com.lumiformtest.form.data.mapper.FormEntityMapper
 import com.lumiformtest.form.data.remote.FormRemoteDataSource
 import com.lumiformtest.form.data.repository.OfflineFormRepository
 import com.lumiformtest.form.domain.model.ChoiceOption
@@ -42,7 +42,7 @@ import org.junit.runner.RunWith
 class ChoicePersistenceTest {
     private val name = "choice-persistence-test.db"
     private val time by lazy { Instant.parse("2026-10-29T12:00:00Z") }
-    private val mapper by lazy { FormEntityMapper() }
+
     private lateinit var context: Context
     private lateinit var database: FormDatabase
 
@@ -156,7 +156,7 @@ class ChoicePersistenceTest {
         local().replaceForm(document(), time)
         tap(10, 1)
         val saved = snapshot()
-        val replacement = mapper.toStorage(document(title = "Updated"), time.plusSeconds(60))
+        val replacement = document(title = "Updated").toStorage(time.plusSeconds(60))
         val invalid = replacement.copy(nodes = replacement.nodes + replacement.nodes.last())
         assertThrows(SQLException::class.java) { runBlocking { database.formDao().replaceForm(invalid) } }
         assertEquals(saved, snapshot())
@@ -244,7 +244,7 @@ class ChoicePersistenceTest {
     }
 
     private fun open() = Room.databaseBuilder(context, FormDatabase::class.java, name).addMigrations(MIGRATION_1_2).build()
-    private fun local() = RoomFormLocalDataSource(database.formDao(), mapper, Dispatchers.IO)
+    private fun local() = RoomFormLocalDataSource(database.formDao(), Dispatchers.IO)
     private suspend fun snapshot() = requireNotNull(local().observeForm().first())
     private suspend fun tap(questionId: Long, optionId: Long, setId: Long = 100) {
         assertEquals(ChoiceSelectionResult.Success, local().toggleChoiceOption(ChoiceOption(questionId, setId, optionId)))

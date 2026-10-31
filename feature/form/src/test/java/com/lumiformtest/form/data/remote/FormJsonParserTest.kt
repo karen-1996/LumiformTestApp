@@ -1,6 +1,5 @@
 package com.lumiformtest.form.data.remote
 
-import com.lumiformtest.form.data.mapper.FormDataMapper
 import com.lumiformtest.form.domain.model.FormDocument
 import com.lumiformtest.form.domain.model.FormItem
 import com.lumiformtest.form.domain.model.ResponseOption
@@ -13,7 +12,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class FormJsonParserTest {
-    private val parser by lazy { FormJsonParser(FormDataMapper()) }
+    private val parser by lazy { FormJsonParser() }
 
     @Test
     fun `challenge sample preserves page titles and the complete hierarchy in order`() {

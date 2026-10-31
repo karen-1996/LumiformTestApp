@@ -12,7 +12,7 @@ import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class FormDataMapperTest {
-    private val mapper by lazy { FormDataMapper() }
+
     private val responseSet by lazy {
         ResponseSetDto(
             id = 10,
@@ -40,7 +40,7 @@ class FormDataMapperTest {
                 FormItem.Image(4, "https://example.com/image.png", "Image title"),
                 FormItem.Choice(2, "Choose", expectedSet)
             ),
-            mapper.map(listOf(page)).pages.single().items
+            listOf(page).toDomain().pages.single().items
         )
     }
 
@@ -48,7 +48,7 @@ class FormDataMapperTest {
     fun `only pages are allowed at the root`() {
         listOf(FormNodeDto.Text(1, "Text"), FormNodeDto.Section(1, "Section", emptyList()))
             .forEach { root ->
-                assertThrows(InvalidFormContentException::class.java) { mapper.map(listOf(root)) }
+                assertThrows(InvalidFormContentException::class.java) { listOf(root).toDomain() }
             }
     }
 
@@ -57,7 +57,7 @@ class FormDataMapperTest {
         val nestedPage = FormNodeDto.Page(2, "Nested page", emptyList())
         listOf(page(nestedPage), page(FormNodeDto.Section(3, "Section", listOf(nestedPage))))
             .forEach { invalid ->
-                assertThrows(InvalidFormContentException::class.java) { mapper.map(listOf(invalid)) }
+                assertThrows(InvalidFormContentException::class.java) { listOf(invalid).toDomain() }
             }
     }
 
@@ -73,7 +73,7 @@ class FormDataMapperTest {
             )
         )
         invalidDocuments.forEach { document ->
-            assertThrows(InvalidFormContentException::class.java) { mapper.map(document) }
+            assertThrows(InvalidFormContentException::class.java) { document.toDomain() }
         }
     }
 
@@ -84,7 +84,7 @@ class FormDataMapperTest {
         )
 
         assertThrows(InvalidFormContentException::class.java) {
-            mapper.map(listOf(page(FormNodeDto.Choice(2, "Choose", invalid))))
+            listOf(page(FormNodeDto.Choice(2, "Choose", invalid))).toDomain()
         }
     }
 
@@ -93,9 +93,7 @@ class FormDataMapperTest {
         val first = responseSet.copy(id = 1, responses = listOf(ResponseOptionDto(1, "A")))
         val second = first.copy(id = 2, responses = listOf(ResponseOptionDto(1, "B")))
 
-        val form = mapper.map(
-            listOf(page(FormNodeDto.Choice(2, "First", first), FormNodeDto.Choice(3, "Second", second)))
-        )
+        val form = listOf(page(FormNodeDto.Choice(2, "First", first), FormNodeDto.Choice(3, "Second", second))).toDomain()
 
         val choices = form.pages.single().items.map { it as FormItem.Choice }
         assertEquals(listOf(1L, 2L), choices.map { it.responseSet.id })
@@ -104,11 +102,9 @@ class FormDataMapperTest {
 
     @Test
     fun `questions can share an identical response set`() {
-        val form = mapper.map(
-            listOf(
+        val form = listOf(
                 page(FormNodeDto.Choice(2, "First", responseSet), FormNodeDto.Choice(3, "Second", responseSet))
-            )
-        )
+            ).toDomain()
 
         val choices = form.pages.single().items.map { it as FormItem.Choice }
         assertEquals(choices[0].responseSet, choices[1].responseSet)
@@ -128,25 +124,23 @@ class FormDataMapperTest {
         )
         conflictingSets.forEach { conflicting ->
             assertThrows(InvalidFormContentException::class.java) {
-                mapper.map(
-                    listOf(
+                listOf(
                         page(
                             FormNodeDto.Choice(2, "First", responseSet),
                             FormNodeDto.Choice(3, "Second", conflicting)
                         )
-                    )
-                )
+                    ).toDomain()
             }
         }
     }
 
     @Test
     fun `validation state does not leak between snapshots or after a failed mapping`() {
-        assertThrows(InvalidFormContentException::class.java) { mapper.map(listOf(page(), page())) }
-        mapper.map(listOf(page(FormNodeDto.Choice(2, "Choose", responseSet))))
+        assertThrows(InvalidFormContentException::class.java) { listOf(page(), page()).toDomain() }
+        listOf(page(FormNodeDto.Choice(2, "Choose", responseSet))).toDomain()
         val changed = responseSet.copy(responses = listOf(ResponseOptionDto(1, "Updated")))
 
-        val next = mapper.map(listOf(page(FormNodeDto.Choice(2, "Choose", changed))))
+        val next = listOf(page(FormNodeDto.Choice(2, "Choose", changed))).toDomain()
 
         val choice = next.pages.single().items.single() as FormItem.Choice
         assertEquals(listOf(ResponseOption(1, "Updated", null)), choice.responseSet.responses)

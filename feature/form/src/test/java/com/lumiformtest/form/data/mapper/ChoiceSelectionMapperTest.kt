@@ -15,20 +15,20 @@ import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class ChoiceSelectionMapperTest {
-    private val mapper by lazy { ChoiceSelectionMapper() }
+
     private val form by lazy {
         val set = ResponseSet(100, false, listOf(ResponseOption(1, "One", null), ResponseOption(2, "Two", null)))
-        FormEntityMapper().toStorage(FormDocument(listOf(FormPage(1, "Page", listOf(
+        FormDocument(listOf(FormPage(1, "Page", listOf(
             FormItem.Choice(10, "First", set), FormItem.Choice(11, "Second", set)
-        )))), Instant.EPOCH)
+        )))).toStorage(Instant.EPOCH)
     }
 
     @Test
     fun `qualified input identity and independent saved answers cross the data boundary`() {
-        assertEquals(SelectedResponseEntity(10, 100, 2), mapper.toEntity(ChoiceOption(10, 100, 2)))
+        assertEquals(SelectedResponseEntity(10, 100, 2), ChoiceOption(10, 100, 2).toEntity())
         val stored = form.copy(selections = listOf(SelectedResponseEntity(10, 100, 1), SelectedResponseEntity(11, 100, 2)))
-        assertEquals(mapOf(10L to ChoiceSelection(100, setOf(1)), 11L to ChoiceSelection(100, setOf(2))), mapper.toDomain(stored))
-        assertEquals(mapper.toDomain(stored), FormEntityMapper().toDomain(stored).selections)
+        assertEquals(mapOf(10L to ChoiceSelection(100, setOf(1)), 11L to ChoiceSelection(100, setOf(2))), stored.toSelections())
+        assertEquals(stored.toSelections(), stored.toDomain().selections)
     }
 
     @Test
@@ -42,7 +42,7 @@ class ChoiceSelectionMapperTest {
             listOf(SelectedResponseEntity(10, 100, 1), SelectedResponseEntity(10, 100, 1))
         )
         for (answers in invalid) {
-            assertThrows(FormStorageException::class.java) { mapper.toDomain(form.copy(selections = answers)) }
+            assertThrows(FormStorageException::class.java) { form.copy(selections = answers).toSelections() }
         }
     }
 }

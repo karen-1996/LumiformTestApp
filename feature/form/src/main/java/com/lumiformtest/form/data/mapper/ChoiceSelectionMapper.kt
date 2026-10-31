@@ -6,26 +6,32 @@ import com.lumiformtest.form.data.local.entity.FormNodeType
 import com.lumiformtest.form.data.local.entity.SelectedResponseEntity
 import com.lumiformtest.form.domain.model.ChoiceOption
 import com.lumiformtest.form.domain.model.ChoiceSelection
-import javax.inject.Inject
 
-internal class ChoiceSelectionMapper @Inject constructor() {
-    fun toEntity(option: ChoiceOption) = SelectedResponseEntity(option.questionId, option.responseSetId, option.optionId)
+internal fun ChoiceOption.toEntity() = SelectedResponseEntity(questionId, responseSetId, optionId)
+internal fun SelectedResponseEntity.toDomain(): ChoiceOption = ChoiceOption(questionId, responseSetId, optionId)
 
-    fun toDomain(form: StoredForm): Map<Long, ChoiceSelection> {
-        val nodes = form.nodes.associateBy { it.id }
-        val sets = form.responseSets.associateBy { it.definition.id }
-        return form.selections.groupBy { it.questionId }.mapValues { (questionId, answers) ->
-            val question = nodes[questionId]
-            val set = sets[question?.responseSetId]
-            if (question?.type != FormNodeType.CHOICE || set == null || answers.any {
-                it.responseSetId != set.definition.id || it.snapshotId != form.metadata.id ||
-                    set.responses.none { option -> option.id == it.optionId }
-            }) throw FormStorageException("Saved answers do not match the question definition")
-            val ids = answers.map { it.optionId }.toSet()
-            if (ids.size != answers.size || (!set.definition.multipleSelection && ids.size > 1)) {
-                throw FormStorageException("Saved answers do not match the selection mode")
-            }
-            ChoiceSelection(set.definition.id, ids)
-        }
+internal data class ChoiceReadDefinition(val responseSetId: Long, val multiple: Boolean, val optionIds: Set<Long>)
+
+internal fun StoredForm.choiceReadIndex(): Map<Long, ChoiceReadDefinition> {
+    val sets = responseSets.associateBy { it.definition.id }
+    return nodes.filter { it.type == FormNodeType.CHOICE }.associate { question ->
+        val set = sets[question.responseSetId] ?: throw FormStorageException("Missing saved response set")
+        question.id to ChoiceReadDefinition(set.definition.id, set.definition.multipleSelection, set.responses.map { it.id }.toSet())
     }
 }
+
+internal fun List<SelectedResponseEntity>.toSelections(
+    definitions: Map<Long, ChoiceReadDefinition>, snapshotId: Int
+): Map<Long, ChoiceSelection> = groupBy { it.questionId }.mapValues { (questionId, answers) ->
+    val definition = definitions[questionId]
+    if (definition == null || answers.any {
+        it.responseSetId != definition.responseSetId || it.snapshotId != snapshotId || it.optionId !in definition.optionIds
+    }) throw FormStorageException("Saved answers do not match the question definition")
+    val ids = answers.map { it.optionId }.toSet()
+    if (ids.size != answers.size || (!definition.multiple && ids.size > 1)) {
+        throw FormStorageException("Saved answers do not match the selection mode")
+    }
+    ChoiceSelection(definition.responseSetId, ids)
+}
+
+internal fun StoredForm.toSelections(): Map<Long, ChoiceSelection> = selections.toSelections(choiceReadIndex(), metadata.id)

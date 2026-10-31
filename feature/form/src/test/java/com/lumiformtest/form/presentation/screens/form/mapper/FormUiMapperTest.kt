@@ -1,6 +1,5 @@
 package com.lumiformtest.form.presentation.screens.form.mapper
 
-import com.lumiformtest.form.data.mapper.FormDataMapper
 import com.lumiformtest.form.data.remote.FormJsonParser
 import com.lumiformtest.form.domain.model.ChoiceOption
 import com.lumiformtest.form.domain.model.ChoiceSelection
@@ -26,7 +25,7 @@ class FormUiMapperTest {
     fun `real document becomes ordered UI rows with all question metadata`() {
         val body = requireNotNull(javaClass.getResourceAsStream("/fixtures/lumiform-android-test.json"))
             .bufferedReader().use { it.readText() }
-        val document = FormJsonParser(FormDataMapper()).parse(body)
+        val document = FormJsonParser().parse(body)
 
         val ui = mapper.map(FormSnapshot(document, time))
 
