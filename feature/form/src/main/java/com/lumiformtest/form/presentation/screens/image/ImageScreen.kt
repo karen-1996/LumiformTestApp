@@ -78,33 +78,33 @@ internal fun ImageScreen(state: ImageUiState, onBack: () -> Unit, onRetry: () ->
 @Preview(name = "Image missing", showBackground = true)
 @Composable
 private fun ImageScreenMissingPreview() {
-    FormPreviewTheme() { ImageScreen(ImageUiState(isLoading = false), {}, {}) }
+    FormPreviewTheme() { ImageScreen(ImageUiState(imageId = 4, isLoading = false), {}, {}) }
 }
 
 @Preview(name = "Saved image read failed", showBackground = true)
 @Composable
 private fun ImageScreenReadFailurePreview() {
-    FormPreviewTheme() { ImageScreen(ImageUiState(isLoading = false, hasReadFailure = true), {}, {}) }
+    FormPreviewTheme() { ImageScreen(ImageUiState(imageId = 4, isLoading = false, hasReadFailure = true), {}, {}) }
 }
 
 @Preview(name = "Image content", showBackground = true)
 @Composable
 private fun ImageScreenContentPreview() {
     FormPreviewTheme() {
-        ImageScreen(ImageUiState(ImageUiModel(4, "Welcome image", "preview://image"), isLoading = false), {}, {})
+        ImageScreen(ImageUiState(ImageUiModel(4, "Welcome image", "preview://image"), isLoading = false, imageId = 4), {}, {})
     }
 }
 
 @Preview(name = "Image loading", showBackground = true)
 @Composable
 private fun ImageScreenLoadingPreview() {
-    FormPreviewTheme() { ImageScreen(ImageUiState(), {}, {}) }
+    FormPreviewTheme() { ImageScreen(ImageUiState(imageId = 4), {}, {}) }
 }
 
 @Preview(name = "Long title · dark", showBackground = true, widthDp = 320, fontScale = 1.5f)
 @Composable
 private fun ImageScreenLongTitlePreview() {
     FormPreviewTheme(darkTheme = true) {
-        ImageScreen(ImageUiState(ImageUiModel(4, "An inspection image with a longer title that should stay readable", "preview://image"), isLoading = false), {}, {})
+        ImageScreen(ImageUiState(ImageUiModel(4, "An inspection image with a longer title that should stay readable", "preview://image"), isLoading = false, imageId = 4), {}, {})
     }
 }

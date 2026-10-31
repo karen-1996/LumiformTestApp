@@ -33,7 +33,13 @@ class RetrofitFormRemoteDataSourceTest {
     fun setUp() { server.start() }
 
     @After
-    fun tearDown() { if (!serverClosed) server.close() }
+    fun tearDown() {
+        if (!serverClosed) server.close()
+        if (clientDelegate.isInitialized()) {
+            client.connectionPool.evictAll()
+            client.dispatcher.executorService.shutdown()
+        }
+    }
 
     @Test
     fun `fetch uses the challenge path and validates the real response`() = runBlocking {
@@ -119,7 +125,18 @@ class RetrofitFormRemoteDataSourceTest {
         assertTrue(source.fetchForm().pages.isEmpty())
     }
 
-    private val client by lazy { OkHttpClient.Builder().addInterceptor(ResponseSizeLimitInterceptor()).build() }
+    private val clientDelegate = lazy { OkHttpClient.Builder().addInterceptor(ResponseSizeLimitInterceptor()).build() }
+    private val client by clientDelegate
+    private val api by lazy { Retrofit.Builder().baseUrl(server.url("/")).client(client).build().create(FormApi::class.java) }
+
+    @Test
+    fun `JSON body is not buffered by Retrofit before the caller reads it`() = runBlocking {
+        server.enqueue(MockResponse.Builder().addHeader("Content-Type", "application/json").body("[]").build())
+        requireNotNull(api.fetchForm().body()).use { body ->
+            assertEquals(0L, body.source().buffer.size)
+            assertEquals("[]", body.string())
+        }
+    }
 
     @Test
     fun `oversized form is invalid content without checking connectivity`() {
@@ -134,7 +151,6 @@ class RetrofitFormRemoteDataSourceTest {
     }
 
     private fun source(connectivity: Lazy<NetworkConnectivity> = Lazy { NetworkConnectivity { true } }): RetrofitFormRemoteDataSource {
-        val api = Retrofit.Builder().baseUrl(server.url("/")).client(client).build().create(FormApi::class.java)
         return RetrofitFormRemoteDataSource(api, FormJsonParser(), Dispatchers.IO, connectivity)
     }
 }

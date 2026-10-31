@@ -10,7 +10,7 @@ internal data class ImageUiState(
     val image: ImageUiModel? = null,
     val isLoading: Boolean = true,
     val hasReadFailure: Boolean = false,
-    val imageId: Long? = null
+    val imageId: Long
 ) : ViewState
 
 internal sealed interface ImageAction : Action {

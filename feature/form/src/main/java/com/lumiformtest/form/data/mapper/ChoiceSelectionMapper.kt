@@ -34,4 +34,5 @@ internal fun List<SelectedResponseEntity>.toSelections(
     ChoiceSelection(definition.responseSetId, ids)
 }
 
-internal fun StoredForm.toSelections(): Map<Long, ChoiceSelection> = selections.toSelections(choiceReadIndex(), metadata.id)
+internal fun StoredForm.toSelections(): Map<Long, ChoiceSelection> =
+    if (selections.isEmpty()) emptyMap() else selections.toSelections(choiceReadIndex(), metadata.id)

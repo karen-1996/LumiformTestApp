@@ -98,7 +98,7 @@ class FormFixtureImageTest {
                     LumiformTestAppTheme {
                         val image = viewer
                         if (image != null) ImageScreen(
-                            ImageUiState(ImageUiModel(image.id, image.title, image.imageUrl), isLoading = false),
+                            ImageUiState(ImageUiModel(image.id, image.title, image.imageUrl), isLoading = false, imageId = image.id),
                             onBack = { viewer = null }, onRetry = {}
                         ) else FormScreen(FormUiState(content = content, isReadingCache = false), { action ->
                             if (action is FormAction.OpenImage) viewer = images.single { it.id == action.imageId }

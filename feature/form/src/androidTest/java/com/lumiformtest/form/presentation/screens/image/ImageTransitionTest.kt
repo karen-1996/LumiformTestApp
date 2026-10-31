@@ -106,7 +106,7 @@ class ImageTransitionTest {
                                 entry<FormDestination.Image> {
                                     ProvideImageTransition(this@SharedTransitionLayout, imageTransitionState) {
                                         ImageScreen(
-                                            ImageUiState(ImageUiModel(image.id, image.title, image.imageUrl), isLoading = false),
+                                            ImageUiState(ImageUiModel(image.id, image.title, image.imageUrl), isLoading = false, imageId = image.id),
                                             { stack.removeLastOrNull() }, {}
                                         )
                                     }
@@ -202,7 +202,7 @@ class ImageTransitionTest {
                                     }
                                     entry<FormDestination.Image> {
                                         ProvideImageTransition(this@SharedTransitionLayout, transitionState) {
-                                            ImageScreen(ImageUiState(ImageUiModel(image.id, image.title, image.imageUrl), isLoading = false),
+                                            ImageScreen(ImageUiState(ImageUiModel(image.id, image.title, image.imageUrl), isLoading = false, imageId = image.id),
                                                 { stack.removeLastOrNull() }, {})
                                         }
                                     }

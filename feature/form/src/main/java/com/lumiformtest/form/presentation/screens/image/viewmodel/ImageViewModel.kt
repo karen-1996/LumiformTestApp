@@ -31,7 +31,7 @@ internal class ImageViewModel @AssistedInject constructor(
             }
             ImageAction.ReadFailed -> updateState { copy(isLoading = false, hasReadFailure = true) }
             ImageAction.Retry -> if (prevState.hasReadFailure && !prevState.isLoading) {
-                prevState.imageId?.let(::observeSavedImage)
+                observeSavedImage(prevState.imageId)
             }
         }
     }

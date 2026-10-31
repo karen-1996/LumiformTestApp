@@ -2,6 +2,7 @@ package com.lumiformtest.form.data.mapper
 
 import com.lumiformtest.form.data.local.FormStorageException
 import com.lumiformtest.form.data.local.entity.SelectedResponseEntity
+import com.lumiformtest.form.data.local.entity.FormNodeEntity
 import com.lumiformtest.form.domain.model.ChoiceOption
 import com.lumiformtest.form.domain.model.ChoiceSelection
 import com.lumiformtest.form.domain.model.FormDocument
@@ -21,6 +22,15 @@ class ChoiceSelectionMapperTest {
         FormDocument(listOf(FormPage(1, "Page", listOf(
             FormItem.Choice(10, "First", set), FormItem.Choice(11, "Second", set)
         )))).toStorage(Instant.EPOCH)
+    }
+
+    @Test
+    fun `an empty answer set does not need a choice index`() {
+        val nodes = object : AbstractList<FormNodeEntity>() {
+            override val size: Int get() = error("No answers need definition lookup")
+            override fun get(index: Int): FormNodeEntity = error("No answers need definition lookup")
+        }
+        assertEquals(emptyMap<Long, ChoiceSelection>(), form.copy(nodes = nodes).toSelections())
     }
 
     @Test

@@ -75,7 +75,7 @@ class ImageScreenTest {
     @Test
     fun missingImageKeepsBackAvailableAndDoesNotOfferMeaninglessRetry() {
         var backs = 0
-        compose.setContent { LumiformTestAppTheme { ImageScreen(ImageUiState(isLoading = false), { backs++ }, {}) } }
+        compose.setContent { LumiformTestAppTheme { ImageScreen(ImageUiState(imageId = 9, isLoading = false), { backs++ }, {}) } }
         compose.onNodeWithText(compose.activity.getString(R.string.image_unavailable)).assertIsDisplayed()
         compose.onNodeWithText(compose.activity.getString(R.string.form_retry)).assertDoesNotExist()
         compose.onNodeWithContentDescription(compose.activity.getString(R.string.back)).performClick()
@@ -86,7 +86,7 @@ class ImageScreenTest {
     fun savedMetadataReadFailureHasExplicitRetry() {
         var retries = 0
         compose.setContent { LumiformTestAppTheme {
-            ImageScreen(ImageUiState(isLoading = false, hasReadFailure = true), {}, { retries++ })
+            ImageScreen(ImageUiState(imageId = 9, isLoading = false, hasReadFailure = true), {}, { retries++ })
         } }
         compose.onNodeWithText(compose.activity.getString(R.string.image_read_error)).assertIsDisplayed()
         compose.onNodeWithText(compose.activity.getString(R.string.form_retry)).performClick()
@@ -102,7 +102,7 @@ class ImageScreenTest {
             CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale = 2f)) {
                 LumiformTestAppTheme(darkTheme = true) {
                     Box(Modifier.width(320.dp)) {
-                        ImageScreen(ImageUiState(ImageUiModel(9, title, "https://example.com/a"), isLoading = false), { backs++ }, {})
+                        ImageScreen(ImageUiState(ImageUiModel(9, title, "https://example.com/a"), isLoading = false, imageId = 9), { backs++ }, {})
                     }
                 }
             }
