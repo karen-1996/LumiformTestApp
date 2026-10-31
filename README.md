@@ -1,3 +1,7 @@
+https://github.com/user-attachments/assets/162c2b8e-dcaa-460c-bf28-4024768a74a3
+
+[Download the demo](docs/videos/lumiform-demo.mp4)
+
 # Lumiform Android Challenge
 
 My implementation of the Lumiform Android coding challenge.
