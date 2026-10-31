@@ -2,7 +2,7 @@
 
 My implementation of the Lumiform Android coding challenge.
 
-The current test baseline has **132 JVM tests** and **62 device tests**, all passing.
+The current test baseline has **132 JVM tests** and **63 device tests**, all passing.
 Focused JVM logic coverage is **98.1% of lines** and **91.3% of branches**, with an
 **80% line-coverage gate**. See [Coverage](#coverage) for the measured scope,
 exclusions, device results, and commands to reproduce the reports.
@@ -17,6 +17,19 @@ and multiple answers are saved locally and preserved when refreshed definitions
 still support them. Loading, empty, error/retry, refresh progress, and last-update
 states are implemented. Images open in a titled viewer and downloaded originals
 remain available offline.
+
+## Screenshots
+
+Captured from the app on Samsung A23, Android 14. The phone supplies the dynamic
+Material colors; other devices can use a different accent palette.
+
+| Form hierarchy · light | Choices · dark |
+| --- | --- |
+| <img src="docs/screenshots/form-light.png" width="240" alt="Form hierarchy with an image thumbnail in light mode"> | <img src="docs/screenshots/form-choices-dark.png" width="240" alt="Single and multiple choice chips in dark mode"> |
+
+| Image viewer · dark | Saved form · offline |
+| --- | --- |
+| <img src="docs/screenshots/image-viewer-dark.png" width="240" alt="Full image with its title in dark mode"> | <img src="docs/screenshots/offline-form-dark.png" width="240" alt="Cached form still visible with the no-internet message"> |
 
 ## Startup
 
@@ -213,8 +226,11 @@ connection". Other request failures keep the existing message. This check does n
 block successful requests or turn cancellation into an offline error. Network-state
 capabilities follow the [Android connectivity guidance](https://developer.android.com/develop/connectivity/network-ops/reading-network-state).
 The list uses stable IDs and saved scroll
-state; indentation and section typography have readable lower bounds. Pure
-presentation mapping reuses flattened rows when only selections change, replacing
+state. Section headings decrease through 22, 20, 18, and 16 sp, then keep the
+16 sp minimum above 14 sp question text. The policy lives in
+`design/theme/HierarchyTypography.kt`; indentation also has a readable limit.
+Image captions use the same small monospace style as choice-selection summaries.
+Pure presentation mapping reuses flattened rows when only selections change, replacing
 only affected choice rows.
 
 The list uses validated unique node IDs as keys and separate content types for
@@ -287,9 +303,14 @@ For this small form, downloaded originals are retained until app data is cleared
 including images removed from later definitions. URLs identify immutable images;
 changed bytes at the same URL are not automatically refreshed. There is no image
 prefetch or background download: an image must have finished loading once before
-it is available offline. Zoom and export are outside this phase.
+it is available offline. Zoom and export are outside the challenge scope.
 
 ## Setup
+
+```shell
+git clone https://github.com/karen-1996/LumiformTestApp.git
+cd LumiformTestApp
+```
 
 - Use Android Studio with support for Android Gradle Plugin 9.5.
 - Use JDK 25 for Gradle, as configured in `gradle/gradle-daemon-jvm.properties`.
@@ -344,11 +365,15 @@ The sample and the [local edge-case scenarios](feature/form/src/test/resources/f
 are test input only. JVM tests read them as resources, and device tests read the
 same files from test APK assets. They are not packaged in the production app.
 
-With an emulator or device connected:
+The final source was also checked in a fresh local directory without IDE state
+or project build output. Debug app/test builds, all 132 JVM tests, and lint passed
+using the installed Android SDK and an existing Gradle dependency cache.
+
+Check connected devices first, unlock the selected device, and target its serial:
 
 ```shell
-./gradlew :app:connectedDebugAndroidTest
-./gradlew :form:connectedDebugAndroidTest
+adb devices -l
+ANDROID_SERIAL=<serial> ./gradlew :app:connectedDebugAndroidTest :form:connectedDebugAndroidTest
 ```
 
 The navigation device test checks that the image destination survives saved
@@ -364,7 +389,9 @@ check readable text contrast and matching fallback window/background colors.
 
 Stateless form screen tests cover row kinds/headings, retry actions, cached content
 during refresh/failure, empty versus loading, saved list position, and long nested
-text at a large font scale in both themes on a small layout width. Choice tests
+text at a large font scale in both themes on a small layout width. A typography
+check reads the rendered text styles at normal and 2x font scale, verifying that
+section sizes decrease over four levels and clamp above question text. Choice tests
 check radio/checkbox semantics, one action per chip tap, saved-selection summaries,
 horizontally scrolling chips, score badges, touch targets, failure messages, disabled controls, and long
 labels with large fonts. Image UI tests cover
@@ -401,6 +428,10 @@ viewer. Back restored the exact scrolled form position. The open viewer also
 returned from Recents after the background app process was killed, while still
 offline. These are manual emulator checks, separate from saved-state UI tests.
 
+On Samsung A23 (Android 14), an offline cold start also kept the saved form and
+titled image viewer available. The screenshots above show the final typography,
+light/dark modes, choices, and cached-content fallback on that device.
+
 ## Coverage
 
 Coverage uses [AGP's built-in JaCoCo support](https://developer.android.com/studio/test/coverage-report),
@@ -414,9 +445,9 @@ Baseline measured locally on **2026-10-31**:
 | JVM logic line coverage | **98.1%** — 673/686 lines |
 | JVM logic branch coverage | **91.3%** — 263/288 branches |
 | JVM tests | **132 passed** |
-| Device tests | **62 passed** |
+| Device tests | **63 passed** |
 | Device-only line coverage, `:app` | **74.9%** |
-| Device-only line coverage, `:form` | **73.5%** |
+| Device-only line coverage, `:form` | **72.8%** |
 
 The JVM percentages describe the non-UI logic scope below. UI rendering and
 Android integration have separate device tests. These are recorded results,
