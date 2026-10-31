@@ -26,7 +26,10 @@ internal class ImageFileStore(
 
     suspend fun original(url: String): File = withContext(ioDispatcher) {
         locks.getOrPut(url) { Mutex() }.withLock {
-            if (!directory.isDirectory && !directory.mkdirs()) throw IOException("Cannot create image storage")
+            // Another image may create this shared directory after the first check.
+            if (!directory.isDirectory && !directory.mkdirs() && !directory.isDirectory) {
+                throw IOException("Cannot create image storage")
+            }
             val name = MessageDigest.getInstance("SHA-256").digest(url.toByteArray(Charsets.UTF_8))
                 .joinToString("") { "%02x".format(it) }
             val original = File(directory, name)

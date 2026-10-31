@@ -4,11 +4,14 @@ import com.lumiformtest.form.data.remote.ImageApi
 import java.io.File
 import java.io.IOException
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.CyclicBarrier
+import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.runBlocking
@@ -27,6 +30,47 @@ class ImageFileStoreTest {
     @get:Rule val temporary = TemporaryFolder()
     private val directory by lazy { File(temporary.root, "images") }
     private val validator by lazy { ImageFileValidator { it.readText().startsWith("IMAGE:") } }
+
+    @Test
+    fun `different uncached images can create their shared directory concurrently`() = runBlocking {
+        val firstChecks = CyclicBarrier(2)
+        val checks = AtomicInteger()
+        val sharedDirectory = object : File(temporary.root, "new-images") {
+            override fun isDirectory(): Boolean {
+                val exists = super.isDirectory()
+                // Both requests see the missing directory before either can create it.
+                if (!exists && checks.incrementAndGet() <= 2) firstChecks.await(5, TimeUnit.SECONDS)
+                return exists
+            }
+        }
+        val requests = AtomicInteger()
+        val api = object : ImageApi {
+            override suspend fun download(url: String): Response<okhttp3.ResponseBody> {
+                requests.incrementAndGet()
+                return Response.success("IMAGE:$url".toResponseBody())
+            }
+        }
+        val store = ImageFileStore(sharedDirectory, api, validator, Dispatchers.IO)
+        val urls = listOf("https://example.com/a.png", "https://example.com/b.png")
+        val files = urls.map { url -> async { store.original(url) } }.awaitAll()
+        assertEquals(urls.map { "IMAGE:$it" }, files.map { it.readText() })
+        assertEquals(2, requests.get())
+        assertEquals(2, files.distinct().size)
+        assertFalse(sharedDirectory.listFiles().orEmpty().any { it.extension == "part" })
+    }
+
+    @Test
+    fun `an existing file cannot be used as image storage`() {
+        val file = temporary.newFile("not-a-directory")
+        val api = object : ImageApi {
+            override suspend fun download(url: String): Response<okhttp3.ResponseBody> = error("Storage must fail before a request")
+        }
+        assertThrows(IOException::class.java) {
+            runBlocking { ImageFileStore(file, api, validator, Dispatchers.IO).original("https://example.com/a.png") }
+        }
+        assertTrue(file.isFile)
+        assertEquals(0L, file.length())
+    }
 
     @Test
     fun `original bytes survive a new store and do not need the server`() = runBlocking {

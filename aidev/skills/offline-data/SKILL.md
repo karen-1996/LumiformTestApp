@@ -28,6 +28,7 @@ Follow the implemented API/storage boundaries. Add selection and image behavior 
 - Stream form responses and bound non-image response bytes in shared networking before debug logging or Retrofit can buffer them. Reject oversized content without replacing the saved snapshot; apply the bound to chunked, decoded gzip, and HTTP error bodies too.
 - ImageApi marks requests with Accept: image/*; keep shared debug logging at headers for those requests so body logging cannot buffer downloads.
 - Treat the full URL as immutable image identity. Originals in filesDir/form-images are retained until app data is cleared, even after definitions remove a URL. Coil has one lazy Hilt-backed loader and a bounded memory cache; originals replace its separate disk cache. Test both thumbnails and the larger viewer with a new loader and no network.
+- Different image URLs may download concurrently. Shared directory creation must accept another request creating it first; keep the deterministic cold-cache race and first-attempt UI checks.
 - Navigate with an image ID and resolve metadata from saved form data through the viewer's use case/MVI/mapping path. Handle removed images and failed saved-content reads explicitly.
 - Observe viewer metadata with an ID-scoped query of `form_node`, not a full-form/answers snapshot. Map it on the local source's IO dispatcher, and verify that answer writes do not rerun the image query.
 - A failed request is not proof of no connectivity. Describe the failed refresh accurately and provide retry without hiding saved content.

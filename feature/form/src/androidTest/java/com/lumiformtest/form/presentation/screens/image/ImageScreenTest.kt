@@ -3,6 +3,7 @@ package com.lumiformtest.form.presentation.screens.image
 import android.graphics.Bitmap
 import android.os.Looper
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.CompositionLocalProvider
@@ -17,9 +18,11 @@ import androidx.compose.ui.unit.Density
 import com.lumiformtest.form.presentation.screens.image.model.ImageUiModel
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
@@ -31,6 +34,7 @@ import coil3.annotation.DelicateCoilApi
 import coil3.EventListener
 import coil3.decode.DataSource
 import coil3.request.ImageRequest
+import coil3.request.ErrorResult
 import coil3.request.SuccessResult
 import coil3.size.Size
 import com.lumiformtest.design.theme.Dimensions
@@ -53,11 +57,13 @@ import java.io.IOException
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.CyclicBarrier
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.Dispatchers
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
@@ -246,6 +252,61 @@ class ImageScreenTest {
             }
             assertEquals(1, requests.get())
             assertEquals(1, validations.get())
+        } finally { loader.shutdown(); directory.deleteRecursively() }
+    }
+
+    @Test
+    fun concurrentUncachedImagesLoadOnTheirFirstAttemptWithoutShowingRetry() {
+        val context = compose.activity
+        val firstChecks = CyclicBarrier(2)
+        val checks = AtomicInteger()
+        val directory = object : File(context.filesDir, "test-image-cold-${System.nanoTime()}") {
+            override fun isDirectory(): Boolean {
+                val exists = super.isDirectory()
+                if (!exists && checks.incrementAndGet() <= 2) firstChecks.await(5, TimeUnit.SECONDS)
+                return exists
+            }
+        }
+        val bytes = Bitmap.createBitmap(64, 64, Bitmap.Config.ARGB_8888).let { bitmap ->
+            try { ByteArrayOutputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it); it.toByteArray() } }
+            finally { bitmap.recycle() }
+        }
+        val requests = AtomicInteger()
+        val decoded = CopyOnWriteArrayList<SuccessResult>()
+        val failures = CopyOnWriteArrayList<Throwable>()
+        val api = object : ImageApi {
+            override suspend fun download(url: String): Response<okhttp3.ResponseBody> {
+                requests.incrementAndGet()
+                return Response.success(bytes.toResponseBody())
+            }
+        }
+        val loader = ImageLoader.Builder(context).diskCache(null).eventListener(object : EventListener() {
+            override fun onSuccess(request: ImageRequest, result: SuccessResult) { decoded += result }
+            override fun onError(request: ImageRequest, result: ErrorResult) { failures += result.throwable }
+        }).components {
+            add(StoredImageFetcher.Factory(ImageFileStore(directory, api, BitmapImageFileValidator(), Dispatchers.IO)))
+        }.build()
+        try {
+            compose.setContent { LumiformTestAppTheme {
+                Column {
+                    listOf("https://example.com/a.png", "https://example.com/b.png").forEach { url ->
+                        key(url) {
+                            FormImage(url, url, Modifier.size(Dimensions.imageThumbnailSize), imageLoader = loader, isThumbnail = true)
+                        }
+                    }
+                }
+            } }
+            compose.waitUntil(5_000) { decoded.size + failures.size == 2 }
+            assertTrue(failures.joinToString(), failures.isEmpty())
+            assertEquals(2, decoded.size)
+            assertEquals(2, requests.get())
+            compose.waitForIdle()
+            compose.onAllNodesWithTag("image_content").assertCountEquals(2)
+            compose.onAllNodesWithText(context.getString(R.string.image_load_error)).assertCountEquals(0)
+            compose.onAllNodesWithText(context.getString(R.string.form_retry)).assertCountEquals(0)
+            val originals = directory.listFiles().orEmpty()
+            assertEquals(2, originals.size)
+            originals.forEach { assertArrayEquals(bytes, it.readBytes()) }
         } finally { loader.shutdown(); directory.deleteRecursively() }
     }
 

@@ -6,9 +6,9 @@ https://github.com/user-attachments/assets/162c2b8e-dcaa-460c-bf28-4024768a74a3
 
 My implementation of the Lumiform Android coding challenge.
 
-The JVM baseline has **165 passing tests**. The last full device run passed
+The JVM baseline has **167 passing tests**. The last full device run passed
 **69 tests** on Samsung A23.
-Focused JVM logic coverage is **98.2% of lines** and **87.9% of branches**, with an
+Focused JVM logic coverage is **98.2% of lines** and **88.1% of branches**, with an
 **80% line-coverage gate**. See [Coverage](#coverage) for the measured scope,
 exclusions, device results, and commands to reproduce the reports.
 
@@ -359,6 +359,8 @@ small raster decode before an atomic rename publishes the original. Failure or
 cancellation removes the temporary file. Existing valid files need no network;
 corrupt files can be downloaded again. Per-process file stamps (length and modified
 time) avoid repeating the validation decode while a retained file is unchanged.
+Directory creation tolerates parallel first downloads for different URLs, so a
+request does not fail when another image has just created the shared directory.
 No database migration is needed here.
 
 For this small form, downloaded originals are retained until app data is cleared,
@@ -504,9 +506,9 @@ Baseline measured locally on **2026-10-31**:
 
 | Measurement | Result |
 | --- | --- |
-| JVM logic line coverage | **98.2%** — 784/798 lines |
-| JVM logic branch coverage | **87.9%** — 443/504 branches |
-| JVM tests | **165 passed** |
+| JVM logic line coverage | **98.2%** — 785/799 lines |
+| JVM logic branch coverage | **88.1%** — 446/506 branches |
+| JVM tests | **167 passed** |
 | Device tests, last full run on Samsung A23 / API 34 | **69 passed** |
 | Earlier device-only line coverage, `:app` | **74.9%** |
 | Earlier device-only line coverage, `:form` | **72.8%** |
@@ -526,8 +528,9 @@ The route's device regression verifies that tapping a choice in a 2,000-row form
 does not traverse rows on Main. JVM checks cover accepted writes finishing in
 order after ViewModel clearing, and bounded known-length, chunked, gzip, and HTTP
 error responses with and without debug logging.
-The latest cleanup also passed 10 focused Samsung image-screen, transition, and
-fixture checks; the 69-test count above remains the last full device baseline.
+The cold-cache fix also passed 13 focused Samsung image-screen, pipeline,
+transition, and fixture checks, including two concurrent first downloads with no
+error or retry shown. The 69-test count remains the last full device baseline.
 Schema 2 -> 3 and same-timestamp definition refreshes have device checks. The device coverage percentages
 above are from an earlier instrumented baseline; the latest device run used
 normal debug builds without coverage instrumentation.
