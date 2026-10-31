@@ -21,6 +21,8 @@ import dagger.hilt.components.SingletonComponent
 import java.time.Clock
 import javax.inject.Qualifier
 import javax.inject.Singleton
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import retrofit2.Retrofit
@@ -32,6 +34,10 @@ internal annotation class FormIoDispatcher
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
 internal annotation class FormDefaultDispatcher
+
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+internal annotation class FormWriteScope
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -48,6 +54,12 @@ internal object FormDataModule {
     @Provides
     @Singleton
     fun api(retrofit: Retrofit): FormApi = retrofit.create(FormApi::class.java)
+
+    @Provides
+    @Singleton
+    @FormWriteScope
+    fun writeScope(@FormIoDispatcher dispatcher: CoroutineDispatcher): CoroutineScope =
+        CoroutineScope(SupervisorJob() + dispatcher)
 
     @Provides
     fun clock(): Clock = Clock.systemUTC()

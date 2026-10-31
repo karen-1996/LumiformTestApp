@@ -81,7 +81,7 @@ class ImageObservationTest {
     fun corruptImageMetadataBecomesARepositoryReadFailure() = runBlocking {
         local.replaceForm(document(FormItem.Image(9, "https://example.com/a", "Image")), Instant.EPOCH)
         database.openHelper.writableDatabase.execSQL("UPDATE form_node SET title = NULL WHERE id = 9")
-        val repository = OfflineFormRepository(FormRemoteDataSource { error("A viewer must not fetch") }, local, Clock.systemUTC())
+        val repository = OfflineFormRepository(FormRemoteDataSource { error("A viewer must not fetch") }, local, Clock.systemUTC(), this)
         assertEquals(ImageObservation.ReadFailure, repository.observeImage(9).first())
     }
 

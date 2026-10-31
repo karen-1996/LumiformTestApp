@@ -69,7 +69,7 @@ class FormFixturePersistenceTest {
         val saved = snapshot()
         for (fixture in FormFixture.cases(::read).filterNot { it.accepted }) {
             val repository = OfflineFormRepository(FormRemoteDataSource { parser.parse(read(fixture.path)) },
-                local(), Clock.fixed(time.plusSeconds(60), ZoneOffset.UTC))
+                local(), Clock.fixed(time.plusSeconds(60), ZoneOffset.UTC), this)
             assertEquals(fixture.file, RefreshFormResult.Failure(FormRefreshFailure.INVALID_CONTENT), repository.refreshForm())
             assertEquals("Rejected refresh must preserve the complete snapshot: ${fixture.file}", saved, snapshot())
         }

@@ -16,6 +16,7 @@ import com.lumiformtest.form.presentation.screens.form.model.ChoiceWriteFailureU
 import com.lumiformtest.form.presentation.screens.form.model.ChoiceWriteFailureReasonUi
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
@@ -85,13 +86,13 @@ internal class FormViewModel @Inject constructor(
                         )
                     ) else copy(lastChoiceAttemptId = attempt.id, pendingChoiceWrites = pendingChoiceWrites + attempt)
                 }
-                if (prevState.pendingChoiceWrites.isEmpty()) writeNextChoice()
+                if (!prevState.hasReadFailure) writeChoice(viewState.value.pendingChoiceWrites.last())
             }
-            is FormAction.ChoiceWriteFinished -> if (prevState.pendingChoiceWrites.firstOrNull()?.id == action.attemptId) {
+            is FormAction.ChoiceWriteFinished -> if (prevState.pendingChoiceWrites.any { it.id == action.attemptId }) {
                 updateState {
                     val previous = choiceWriteFailure
                     copy(
-                        pendingChoiceWrites = pendingChoiceWrites.drop(1),
+                        pendingChoiceWrites = pendingChoiceWrites.filterNot { it.id == action.attemptId },
                         choiceWriteFailure = when {
                             previous != null && previous.id > action.attemptId -> previous
                             action.failure != null -> ChoiceWriteFailureUi(action.attemptId, action.questionId, action.failure)
@@ -100,7 +101,6 @@ internal class FormViewModel @Inject constructor(
                         }
                     )
                 }
-                writeNextChoice()
             }
             is FormAction.DismissChoiceFailure -> updateState {
                 if (choiceWriteFailure?.id == action.id) copy(choiceWriteFailure = null) else this
@@ -124,10 +124,10 @@ internal class FormViewModel @Inject constructor(
         }.takeWhile { it != FormObservation.ReadFailure }.launchIn(viewModelScope)
     }
 
-    private fun writeNextChoice() {
-        val (id, option) = viewState.value.pendingChoiceWrites.firstOrNull() ?: return
-        // The queue head stays in state until its write finishes.
-        viewModelScope.launch {
+    private fun writeChoice(attempt: ChoiceWriteAttemptUiModel) {
+        val (id, option) = attempt
+        // Submit before returning to the action queue. The repository owns accepted writes.
+        viewModelScope.launch(start = CoroutineStart.UNDISPATCHED) {
             val failure = when (val result = toggleChoiceOption(option.toDomain())) {
                 ChoiceSelectionResult.Success -> null
                 is ChoiceSelectionResult.Failure -> result.reason.toUiModel()

@@ -53,7 +53,7 @@ class OfflineFormRepositoryTest {
     fun `observation reads cache immediately without requesting the network`() = runTest {
         var fetches = 0
         val local = FakeLocal(saved)
-        val repository = OfflineFormRepository(FormRemoteDataSource { fetches++; document("New") }, local, clock)
+        val repository = OfflineFormRepository(FormRemoteDataSource { fetches++; document("New") }, local, clock, backgroundScope)
 
         assertEquals(FormObservation.Snapshot(saved), repository.observeForm().first())
         assertEquals(0, fetches)
@@ -67,7 +67,7 @@ class OfflineFormRepositoryTest {
             beforeWrite = { writeStarted.complete(Unit); finishWrite.await() }
         }
         val updated = document("Updated")
-        val repository = OfflineFormRepository(FormRemoteDataSource { updated }, local, clock)
+        val repository = OfflineFormRepository(FormRemoteDataSource { updated }, local, clock, backgroundScope)
 
         val refresh = async { repository.refreshForm() }
         writeStarted.await()
@@ -88,7 +88,7 @@ class OfflineFormRepositoryTest {
         )
         for ((error, reason) in failures) {
             val local = FakeLocal(saved)
-            val repository = OfflineFormRepository(FormRemoteDataSource { throw error }, local, clock)
+            val repository = OfflineFormRepository(FormRemoteDataSource { throw error }, local, clock, backgroundScope)
 
             assertEquals(RefreshFormResult.Failure(reason), repository.refreshForm())
             assertEquals(FormObservation.Snapshot(saved), repository.observeForm().first())
@@ -99,7 +99,7 @@ class OfflineFormRepositoryTest {
     @Test
     fun `failed first fetch leaves the cache absent`() = runTest {
         val local = FakeLocal(null)
-        val repository = OfflineFormRepository(FormRemoteDataSource { throw IOException("Offline") }, local, clock)
+        val repository = OfflineFormRepository(FormRemoteDataSource { throw IOException("Offline") }, local, clock, backgroundScope)
 
         assertEquals(RefreshFormResult.Failure(FormRefreshFailure.FETCH), repository.refreshForm())
         assertEquals(FormObservation.Snapshot(null), repository.observeForm().first())
@@ -108,7 +108,7 @@ class OfflineFormRepositoryTest {
     @Test
     fun `storage failure keeps the previous snapshot`() = runTest {
         val local = FakeLocal(saved).apply { beforeWrite = { throw FormStorageException("Disk full") } }
-        val repository = OfflineFormRepository(FormRemoteDataSource { document("Updated") }, local, clock)
+        val repository = OfflineFormRepository(FormRemoteDataSource { document("Updated") }, local, clock, backgroundScope)
 
         assertEquals(RefreshFormResult.Failure(FormRefreshFailure.STORAGE), repository.refreshForm())
         assertEquals(FormObservation.Snapshot(saved), repository.observeForm().first())
@@ -136,7 +136,7 @@ class OfflineFormRepositoryTest {
             active--
             document("Response $number")
         }
-        val repository = OfflineFormRepository(remote, local, clock)
+        val repository = OfflineFormRepository(remote, local, clock, backgroundScope)
         val first = async { repository.refreshForm() }
         val second = async { repository.refreshForm() }
         runCurrent()
@@ -161,7 +161,7 @@ class OfflineFormRepositoryTest {
         val local = FakeLocal(saved)
         val repository = OfflineFormRepository(FormRemoteDataSource {
             if (++fetches == 1) awaitCancellation() else document("Retry")
-        }, local, clock)
+        }, local, clock, backgroundScope)
         val first = async { repository.refreshForm() }
         runCurrent()
         first.cancelAndJoin()
@@ -175,7 +175,7 @@ class OfflineFormRepositoryTest {
     @Test
     fun `cancellation during storage is not converted to a failure result`() = runTest {
         val local = FakeLocal(saved).apply { beforeWrite = { throw CancellationException("Stopped") } }
-        val repository = OfflineFormRepository(FormRemoteDataSource { document("Updated") }, local, clock)
+        val repository = OfflineFormRepository(FormRemoteDataSource { document("Updated") }, local, clock, backgroundScope)
         val refresh = async { repository.refreshForm() }
         refresh.join()
 
@@ -192,7 +192,7 @@ class OfflineFormRepositoryTest {
             override suspend fun replaceForm(document: FormDocument, lastUpdated: Instant) = Unit
             override suspend fun toggleChoiceOption(option: ChoiceOption) = ChoiceSelectionResult.Success
         }
-        val repository = OfflineFormRepository(FormRemoteDataSource { document("New") }, local, clock)
+        val repository = OfflineFormRepository(FormRemoteDataSource { document("New") }, local, clock, backgroundScope)
 
         assertEquals(FormObservation.ReadFailure, repository.observeForm().first())
     }
@@ -208,7 +208,7 @@ class OfflineFormRepositoryTest {
             }
             val thrown = assertThrows(error.javaClass) {
                 runTest {
-                    val repository = OfflineFormRepository(FormRemoteDataSource { document("New") }, local, clock)
+                    val repository = OfflineFormRepository(FormRemoteDataSource { document("New") }, local, clock, backgroundScope)
                     repository.observeForm().first()
                 }
             }
@@ -220,7 +220,7 @@ class OfflineFormRepositoryTest {
     fun `selection writes stay local and preserve qualified option identity`() = runTest {
         val input = ChoiceOption(10, 100, 2)
         val local = FakeLocal(saved).apply { toggle = { assertEquals(input, it); ChoiceSelectionResult.Success } }
-        val repository = OfflineFormRepository(FormRemoteDataSource { error("Selection must not fetch") }, local, clock)
+        val repository = OfflineFormRepository(FormRemoteDataSource { error("Selection must not fetch") }, local, clock, backgroundScope)
         assertEquals(ChoiceSelectionResult.Success, repository.toggleChoiceOption(input))
         local.toggle = { ChoiceSelectionResult.Failure(ChoiceSelectionFailure.UNAVAILABLE) }
         assertEquals(ChoiceSelectionResult.Failure(ChoiceSelectionFailure.UNAVAILABLE), repository.toggleChoiceOption(input))
@@ -229,7 +229,9 @@ class OfflineFormRepositoryTest {
     @Test
     fun `selection storage errors are typed while cancellation and programming errors propagate`() = runTest {
         val local = FakeLocal(saved)
-        val repository = OfflineFormRepository(FormRemoteDataSource { document("New") }, local, clock)
+        val scope = kotlinx.coroutines.CoroutineScope(backgroundScope.coroutineContext +
+            kotlinx.coroutines.SupervisorJob(backgroundScope.coroutineContext[kotlinx.coroutines.Job]))
+        val repository = OfflineFormRepository(FormRemoteDataSource { document("New") }, local, clock, scope)
         local.toggle = { throw FormStorageException("Cannot save") }
         assertEquals(ChoiceSelectionResult.Failure(ChoiceSelectionFailure.STORAGE), repository.toggleChoiceOption(ChoiceOption(10, 100, 1)))
         for (error in listOf(CancellationException("Stopped"), IllegalStateException("Bug"))) {
@@ -252,7 +254,7 @@ class OfflineFormRepositoryTest {
         val local = FakeLocal(saved).apply {
             imageRead = { id -> assertEquals(9L, id); flowOf(image, null) }
         }
-        val repository = OfflineFormRepository(FormRemoteDataSource { error("Image reads must not fetch") }, local, clock)
+        val repository = OfflineFormRepository(FormRemoteDataSource { error("Image reads must not fetch") }, local, clock, backgroundScope)
         assertEquals(listOf(ImageObservation.Content(image), ImageObservation.Content(null)),
             repository.observeImage(9).toList())
     }
@@ -260,7 +262,7 @@ class OfflineFormRepositoryTest {
     @Test
     fun `image storage errors become read failures while cancellation and bugs propagate`() = runTest {
         val local = FakeLocal(saved)
-        val repository = OfflineFormRepository(FormRemoteDataSource { error("Not used") }, local, clock)
+        val repository = OfflineFormRepository(FormRemoteDataSource { error("Not used") }, local, clock, backgroundScope)
         local.imageRead = { flow { throw FormStorageException("Cannot read image") } }
         assertEquals(ImageObservation.ReadFailure, repository.observeImage(9).first())
         for (error in listOf(CancellationException("Stopped"), IllegalStateException("Bug"))) {

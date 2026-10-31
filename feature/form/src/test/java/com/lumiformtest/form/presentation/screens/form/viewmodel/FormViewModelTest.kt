@@ -398,19 +398,42 @@ class FormViewModelTest {
     }
 
     @Test
-    fun `clearing cancels the choice writer and leaves queued taps uncommitted`() = runTest(dispatcher) {
-        var cancelled = false
-        val repository = FakeRepository(FormObservation.Snapshot(choiceSnapshot())).apply {
-            toggle = { try { awaitCancellation() } finally { cancelled = true } }
+    fun `accepted taps finish in order after clearing while observation stops`() = runTest(dispatcher) {
+        val releaseFirst = CompletableDeferred<Unit>()
+        val committed = mutableListOf<ChoiceOption>()
+        var observationStopped = false
+        val local = object : com.lumiformtest.form.data.local.FormLocalDataSource {
+            override fun observeForm() = flow {
+                try {
+                    emit(choiceSnapshot())
+                    awaitCancellation()
+                } finally { observationStopped = true }
+            }
+            override fun observeImage(imageId: Long) = flow<com.lumiformtest.form.domain.model.FormImage?> { }
+            override suspend fun replaceForm(document: FormDocument, lastUpdated: Instant) = Unit
+            override suspend fun toggleChoiceOption(option: ChoiceOption): ChoiceSelectionResult {
+                if (committed.isEmpty()) releaseFirst.await()
+                committed += option
+                return ChoiceSelectionResult.Success
+            }
         }
-        val viewModel = create(repository)
-        repeat(3) { viewModel.sendAction(FormAction.OptionClicked(ChoiceOptionUiInput(10, 100, 1))) }
+        val repository = com.lumiformtest.form.data.repository.OfflineFormRepository(
+            com.lumiformtest.form.data.remote.FormRemoteDataSource { awaitCancellation() },
+            local, java.time.Clock.systemUTC(), backgroundScope
+        )
+        val model = FormViewModel(ObserveFormUseCase(repository), RefreshFormUseCase(repository),
+            ToggleChoiceOptionUseCase(repository), dispatcher).also { store.put("durable-writes", it) }
+        val inputs = listOf(ChoiceOptionUiInput(10, 100, 1), ChoiceOptionUiInput(10, 100, 2), ChoiceOptionUiInput(11, 100, 1))
+        inputs.forEach { model.sendAction(FormAction.OptionClicked(it)) }
         runCurrent()
+        assertEquals(3, model.viewState.value.pendingChoiceWrites.size)
+        assertTrue(committed.isEmpty())
         store.clear()
         runCurrent()
-        assertTrue(cancelled)
-        assertEquals(1, repository.toggles.size)
-        assertTrue(viewModel.selected(10).isEmpty())
+        assertTrue(observationStopped)
+        releaseFirst.complete(Unit)
+        runCurrent()
+        assertEquals(inputs.map { ChoiceOption(it.questionId, it.responseSetId, it.optionId) }, committed)
     }
 
     @Test

@@ -1,5 +1,9 @@
 package com.lumiformtest.form.data.repository
 
+import com.lumiformtest.form.di.FormWriteScope
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.async
 import com.lumiformtest.form.data.local.FormLocalDataSource
 import com.lumiformtest.form.data.local.FormStorageException
 import com.lumiformtest.form.data.remote.FormRemoteDataSource
@@ -28,15 +32,23 @@ import retrofit2.HttpException
 internal class OfflineFormRepository @Inject constructor(
     private val remote: FormRemoteDataSource,
     private val local: FormLocalDataSource,
-    private val clock: Clock
+    private val clock: Clock,
+    @FormWriteScope private val writeScope: CoroutineScope
 ) : FormRepository {
     private val refreshMutex by lazy { Mutex() }
+    private val choiceMutex by lazy { Mutex() }
 
-    override suspend fun toggleChoiceOption(option: ChoiceOption): ChoiceSelectionResult = try {
-        local.toggleChoiceOption(option)
-    } catch (_: FormStorageException) {
-        ChoiceSelectionResult.Failure(ChoiceSelectionFailure.STORAGE)
-    }
+    override suspend fun toggleChoiceOption(option: ChoiceOption): ChoiceSelectionResult =
+        // Enter the FIFO mutex before suspension; cancelling the caller only stops waiting.
+        writeScope.async(start = CoroutineStart.UNDISPATCHED) {
+            choiceMutex.withLock {
+                try {
+                    local.toggleChoiceOption(option)
+                } catch (_: FormStorageException) {
+                    ChoiceSelectionResult.Failure(ChoiceSelectionFailure.STORAGE)
+                }
+            }
+        }.await()
 
     override fun observeForm() = local.observeForm()
         .map<FormSnapshot?, FormObservation> { FormObservation.Snapshot(it) }

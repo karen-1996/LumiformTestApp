@@ -171,7 +171,7 @@ class ChoicePersistenceTest {
             CREATE TRIGGER fail_answer BEFORE INSERT ON selected_response
             BEGIN SELECT RAISE(ABORT, 'Test write failure'); END
         """.trimIndent())
-        val repository = OfflineFormRepository(FormRemoteDataSource { document() }, local(), Clock.systemUTC())
+        val repository = OfflineFormRepository(FormRemoteDataSource { document() }, local(), Clock.systemUTC(), this)
         assertEquals(ChoiceSelectionResult.Failure(ChoiceSelectionFailure.STORAGE), repository.toggleChoiceOption(ChoiceOption(10, 100, 2)))
         assertEquals(saved, snapshot())
     }
@@ -185,7 +185,7 @@ class ChoicePersistenceTest {
             started.complete(Unit)
             finish.await()
             document(title = "Updated")
-        }, local(), Clock.fixed(time.plusSeconds(60), ZoneOffset.UTC))
+        }, local(), Clock.fixed(time.plusSeconds(60), ZoneOffset.UTC), this)
         val refresh = async(Dispatchers.IO) { repository.refreshForm() }
         withTimeout(5_000) { started.await() }
         assertEquals(ChoiceSelectionResult.Success, withTimeout(2_000) { repository.toggleChoiceOption(ChoiceOption(10, 100, 2)) })

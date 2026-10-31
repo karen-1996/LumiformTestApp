@@ -85,7 +85,7 @@ class FormPersistenceTest {
         database = openDatabase()
         val repository = OfflineFormRepository(
             FormRemoteDataSource { throw IOException("Offline") },
-            local(), Clock.fixed(time.plusSeconds(60), ZoneOffset.UTC)
+            local(), Clock.fixed(time.plusSeconds(60), ZoneOffset.UTC), this
         )
 
         assertEquals(RefreshFormResult.Failure(FormRefreshFailure.FETCH), repository.refreshForm())
