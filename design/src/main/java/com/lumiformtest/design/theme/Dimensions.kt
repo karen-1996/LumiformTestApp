@@ -4,6 +4,8 @@ import androidx.compose.ui.unit.dp
 
 // Keep layout values together so screens and previews use the same sizes.
 object Dimensions {
+    const val MAX_SECTION_INDENT_LEVELS = 4
+
     val none = 0.dp
     val spacingExtraSmall = 4.dp
     val spacingSmall = 8.dp

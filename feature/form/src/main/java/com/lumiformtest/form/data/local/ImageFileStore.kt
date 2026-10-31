@@ -12,12 +12,14 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
+private const val DEFAULT_MAX_IMAGE_BYTES = 20L * 1024 * 1024
+
 internal class ImageFileStore(
     private val directory: File,
     private val api: ImageApi,
     private val validator: ImageFileValidator,
     private val ioDispatcher: CoroutineDispatcher,
-    private val maxBytes: Long = 20L * 1024 * 1024
+    private val maxBytes: Long = DEFAULT_MAX_IMAGE_BYTES
 ) {
     private val locks by lazy { ConcurrentHashMap<String, Mutex>() }
     private val validatedFiles by lazy { ConcurrentHashMap<String, FileStamp>() }

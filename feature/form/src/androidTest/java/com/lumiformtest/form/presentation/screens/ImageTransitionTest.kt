@@ -32,6 +32,7 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.lumiformtest.design.theme.LumiformTestAppTheme
+import com.lumiformtest.design.theme.MotionDurations.IMAGE_TRANSITION_MILLIS
 import com.lumiformtest.form.FormScreenTestActivity
 import com.lumiformtest.form.presentation.model.ImageUiModel
 import com.lumiformtest.form.presentation.model.FormRowUiModel
@@ -89,8 +90,8 @@ class ImageTransitionTest {
                     SharedTransitionLayout {
                         NavDisplay(
                             backStack = stack,
-                            transitionSpec = { fadeIn(tween(350)) togetherWith fadeOut(tween(350)) },
-                            popTransitionSpec = { fadeIn(tween(350)) togetherWith fadeOut(tween(350)) },
+                            transitionSpec = { fadeIn(tween(IMAGE_TRANSITION_MILLIS)) togetherWith fadeOut(tween(IMAGE_TRANSITION_MILLIS)) },
+                            popTransitionSpec = { fadeIn(tween(IMAGE_TRANSITION_MILLIS)) togetherWith fadeOut(tween(IMAGE_TRANSITION_MILLIS)) },
                             entryProvider = entryProvider {
                                 entry<FormDestination.Form> {
                                     ProvideImageTransition(this@SharedTransitionLayout, imageTransitionState) {
@@ -183,8 +184,8 @@ class ImageTransitionTest {
                         SharedTransitionLayout {
                             NavDisplay(
                                 backStack = stack,
-                                transitionSpec = { fadeIn(tween(350)) togetherWith fadeOut(tween(350)) },
-                                popTransitionSpec = { fadeIn(tween(350)) togetherWith fadeOut(tween(350)) },
+                                transitionSpec = { fadeIn(tween(IMAGE_TRANSITION_MILLIS)) togetherWith fadeOut(tween(IMAGE_TRANSITION_MILLIS)) },
+                                popTransitionSpec = { fadeIn(tween(IMAGE_TRANSITION_MILLIS)) togetherWith fadeOut(tween(IMAGE_TRANSITION_MILLIS)) },
                                 entryProvider = entryProvider {
                                     entry<FormDestination.Form> {
                                         ProvideImageTransition(this@SharedTransitionLayout, transitionState) {
@@ -283,7 +284,7 @@ class ImageTransitionTest {
                         SharedTransitionLayout {
                             NavDisplay(
                                 backStack = stack,
-                                transitionSpec = { fadeIn(tween(350)) togetherWith fadeOut(tween(350)) },
+                                transitionSpec = { fadeIn(tween(IMAGE_TRANSITION_MILLIS)) togetherWith fadeOut(tween(IMAGE_TRANSITION_MILLIS)) },
                                 entryProvider = entryProvider {
                                     entry<FormDestination.Form> {
                                         ProvideImageTransition(this@SharedTransitionLayout, transitionState) {

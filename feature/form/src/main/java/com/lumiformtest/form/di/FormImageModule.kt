@@ -20,6 +20,8 @@ import retrofit2.Retrofit
 @Module
 @InstallIn(SingletonComponent::class)
 internal object FormImageModule {
+    private const val IMAGE_MEMORY_CACHE_PERCENT = 0.20
+
     @Provides
     @Singleton
     fun api(retrofit: Retrofit): ImageApi = retrofit.create(ImageApi::class.java)
@@ -38,7 +40,7 @@ internal object FormImageModule {
     fun imageLoader(@ApplicationContext context: Context, store: ImageFileStore): ImageLoader =
         ImageLoader.Builder(context)
             .components { add(StoredImageFetcher.Factory(store)) }
-            .memoryCache { MemoryCache.Builder().maxSizePercent(context, 0.20).build() }
+            .memoryCache { MemoryCache.Builder().maxSizePercent(context, IMAGE_MEMORY_CACHE_PERCENT).build() }
             // Originals are the disk layer. I keep them outside Coil's evictable cache.
             .diskCache(null)
             .build()

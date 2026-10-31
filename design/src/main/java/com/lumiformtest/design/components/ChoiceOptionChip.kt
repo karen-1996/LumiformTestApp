@@ -30,6 +30,7 @@ import com.lumiformtest.design.theme.Dimensions
 import com.lumiformtest.design.theme.LumiformTestAppTheme
 
 private val ChipLineBreaks by lazy { Regex("[\\r\\n\\t\\u2028\\u2029]+") }
+private const val DISABLED_CONTENT_ALPHA = 0.38f
 
 @Composable
 fun ChoiceOptionChip(
@@ -47,7 +48,7 @@ fun ChoiceOptionChip(
     val colors = MaterialTheme.colorScheme
     val shape = MaterialTheme.shapes.extraLarge
     val foreground = when {
-        !enabled -> colors.onSurface.copy(alpha = 0.38f)
+        !enabled -> colors.onSurface.copy(alpha = DISABLED_CONTENT_ALPHA)
         selected -> colors.onPrimaryContainer
         else -> colors.onSurface
     }

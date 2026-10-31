@@ -37,7 +37,7 @@ internal fun FormRow(
     horizontalPadding: Dp = Dimensions.none
 ) {
     // Deep sections should still leave enough room for text on a small screen.
-    val indentation = Dimensions.sectionIndent * (row.depth - 1).coerceIn(0, 4)
+    val indentation = Dimensions.sectionIndent * (row.depth - 1).coerceIn(0, Dimensions.MAX_SECTION_INDENT_LEVELS)
     val contentPadding = PaddingValues(start = horizontalPadding + indentation, end = horizontalPadding)
     Column(
         modifier = Modifier.fillMaxWidth().testTag("form_row_${row.id}"),

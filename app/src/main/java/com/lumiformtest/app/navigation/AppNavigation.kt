@@ -1,6 +1,5 @@
 package com.lumiformtest.app.navigation
 
-import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -14,11 +13,11 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import com.lumiformtest.design.theme.MotionDurations.IMAGE_TRANSITION_MILLIS
 import com.lumiformtest.form.presentation.navigation.FormDestination
 import com.lumiformtest.form.presentation.navigation.formEntries
 import com.lumiformtest.form.presentation.navigation.rememberFormImageTransitionState
 
-@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 internal fun AppNavigation(
     backStack: NavBackStack<NavKey> = rememberNavBackStack(FormDestination.Form)
@@ -32,9 +31,9 @@ internal fun AppNavigation(
         NavDisplay(
             backStack = backStack,
             onBack = onBack,
-            transitionSpec = { fadeIn(tween(350)) togetherWith fadeOut(tween(350)) },
-            popTransitionSpec = { fadeIn(tween(350)) togetherWith fadeOut(tween(350)) },
-            predictivePopTransitionSpec = { fadeIn(tween(350)) togetherWith fadeOut(tween(350)) },
+            transitionSpec = { fadeIn(tween(IMAGE_TRANSITION_MILLIS)) togetherWith fadeOut(tween(IMAGE_TRANSITION_MILLIS)) },
+            popTransitionSpec = { fadeIn(tween(IMAGE_TRANSITION_MILLIS)) togetherWith fadeOut(tween(IMAGE_TRANSITION_MILLIS)) },
+            predictivePopTransitionSpec = { fadeIn(tween(IMAGE_TRANSITION_MILLIS)) togetherWith fadeOut(tween(IMAGE_TRANSITION_MILLIS)) },
             entryDecorators = listOf(
                 rememberSaveableStateHolderNavEntryDecorator(),
                 rememberViewModelStoreNavEntryDecorator()

@@ -20,6 +20,9 @@ import retrofit2.Retrofit
 @Module
 @InstallIn(SingletonComponent::class)
 internal object NetworkModule {
+    private const val IO_TIMEOUT_SECONDS = 10L
+    private const val CALL_TIMEOUT_SECONDS = 20L
+
     @Provides
     @Singleton
     fun connectivity(@ApplicationContext context: Context): NetworkConnectivity {
@@ -42,10 +45,10 @@ internal object NetworkModule {
             // Debug logs form bodies and image headers. Release creates no logger.
             if (BuildConfig.DEBUG) addInterceptor(loggingInterceptor.get())
         }
-        .connectTimeout(10, TimeUnit.SECONDS)
-        .readTimeout(10, TimeUnit.SECONDS)
-        .writeTimeout(10, TimeUnit.SECONDS)
-        .callTimeout(20, TimeUnit.SECONDS)
+        .connectTimeout(IO_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        .readTimeout(IO_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        .writeTimeout(IO_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        .callTimeout(CALL_TIMEOUT_SECONDS, TimeUnit.SECONDS)
         .build()
 
     @Provides

@@ -29,6 +29,7 @@ import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.lookaheadScopeCoordinates
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
+import com.lumiformtest.design.theme.MotionDurations.IMAGE_TRANSITION_MILLIS
 
 private class ImageTransitionScopes(
     val shared: SharedTransitionScope,
@@ -58,7 +59,7 @@ internal fun Modifier.sharedImageModifier(imageId: Long, isThumbnail: Boolean = 
     // Standalone screens and previews also work without a navigation transition scope.
     val thumbnailShape = MaterialTheme.shapes.medium
     val scopes = LocalImageTransition.current ?: return clip(if (isThumbnail) thumbnailShape else RectangleShape)
-    val corners = scopes.visibility.transition.animateFloat(transitionSpec = { tween(350) }, label = "image corners") {
+    val corners = scopes.visibility.transition.animateFloat(transitionSpec = { tween(IMAGE_TRANSITION_MILLIS) }, label = "image corners") {
         if ((it == EnterExitState.Visible) == isThumbnail) 1f else 0f
     }
     val shape = remember(thumbnailShape, corners) {
@@ -96,7 +97,7 @@ internal fun Modifier.sharedImageModifier(imageId: Long, isThumbnail: Boolean = 
         this@sharedImageModifier.sharedElement(
             sharedContentState = rememberSharedContentState(key = "form-image-$imageId"),
             animatedVisibilityScope = scopes.visibility,
-            boundsTransform = { _, _ -> tween(350) },
+            boundsTransform = { _, _ -> tween(IMAGE_TRANSITION_MILLIS) },
             clipInOverlayDuringTransition = viewportClip
         ).clip(shape)
     }
