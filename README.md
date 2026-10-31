@@ -6,8 +6,8 @@ https://github.com/user-attachments/assets/162c2b8e-dcaa-460c-bf28-4024768a74a3
 
 My implementation of the Lumiform Android coding challenge.
 
-The current test baseline has **132 JVM tests** and **63 device tests**, all passing.
-Focused JVM logic coverage is **98.1% of lines** and **91.3% of branches**, with an
+The full test baseline passed **163 JVM tests** and **69 device tests** on Samsung A23.
+Focused JVM logic coverage is **98.2% of lines** and **87.7% of branches**, with an
 **80% line-coverage gate**. See [Coverage](#coverage) for the measured scope,
 exclusions, device results, and commands to reproduce the reports.
 
@@ -113,6 +113,11 @@ Data mappers handle storage and API formats. Presentation mappers prepare domain
 data for the screen, including hierarchy depth and display state. This keeps
 DTOs, entities, and domain models out of screen state and composables.
 
+Stateless mappers are extension functions in named mapper files, such as
+`toDomain`, `toStorage`, and `toUiModel`. This follows the style used by Google's
+[Now in Android sample](https://github.com/android/nowinandroid/blob/main/core/database/src/main/kotlin/com/google/samples/apps/nowinandroid/core/database/model/TopicEntity.kt).
+They need no injected mapper instances. Stateful parsing keeps its own class.
+
 Mappers stay inside the feature and have no side effects. DTO/domain,
 entity/domain, and domain/UI mappers are implemented. The presentation mapper
 flattens the tree in source order and preserves parent IDs, depth, and question
@@ -144,6 +149,12 @@ Debug logs form bodies and image headers; release clients have no logging interc
 The feature declares `FormApi` and creates it from the injected Retrofit instance.
 Form decoding, validation, and failure handling stay in `:form`.
 
+Form responses use Retrofit streaming. Shared networking caps non-image responses
+at 5 MiB before logging or Retrofit can buffer them, including chunked bodies,
+decoded gzip, and HTTP error bodies. An oversized form is rejected as invalid
+content and leaves the last saved snapshot unchanged. Images keep their separate
+20 MiB download budget.
+
 Retrofit fetches the challenge endpoint with OkHttp. The response body is closed
 after the existing parser decodes and validates it. Fetching, body reading, and
 mapping run outside the main thread.
@@ -153,7 +164,12 @@ fetching alone does not publish content. Five tables store nodes with parent IDs
 and sibling positions, response sets, ordered response options, selected answers,
 and the last successful refresh time. This is structured storage rather than a cached JSON blob.
 
-Room reads and replaces each snapshot in a transaction. A write failure rolls
+Definitions and answers use separate transactional Room queries. Answer writes
+do not reload or remap the definition graph. The local source combines only
+matching stored definition versions, so independently scheduled queries cannot
+mix old answers with new definitions. Replacing a definition increments its
+version in the write transaction, even when the refresh timestamp stays the same.
+A write failure rolls
 back both content and metadata. A failed fetch or invalid response never starts
 replacement. An empty fetched form has metadata; no saved form is represented
 by null. Cached read errors propagate rather than pretending the cache is empty.
@@ -165,16 +181,19 @@ RefreshFormUseCase provide the boundary for the MVI integration. Expected saved
 content read failures become a domain observation result; retry restarts a failed
 observer. The ViewModel does not import Room or data-layer exceptions.
 
-Schemas 1 and 2 are exported under `feature/form/schemas` and kept in Git. The explicit
-1 -> 2 migration adds selections and their indexes without clearing the saved
-form. There is no destructive-migration fallback. Image URLs stay in Room;
+Schemas 1, 2, and 3 are exported under `feature/form/schemas` and kept in Git. The explicit
+1 -> 2 migration adds selections and their indexes. The 2 -> 3 migration adds
+definition versioning while preserving saved content and answers. There is no
+destructive-migration fallback. Image URLs stay in Room;
 downloaded originals live in app-owned files.
 
 ## Choice persistence
 
 Single-choice questions replace their previous answer and keep an already-selected
-option selected. Multiple-choice options toggle independently. The DAO reads the current
-saved definition and applies each operation in one transaction. Answers belong
+option selected. Multiple-choice options toggle independently. Pure domain policies
+decide the next selection and reconcile answers after definition changes. The DAO
+reads the current saved definition and answers, maps them to policy inputs, and
+applies the result in one transaction. Answers belong
 to a question and response set; shared definitions do not share selected answers.
 Composite foreign keys reject options from a different set. A stale or removed
 option returns a domain failure; saved answers stay unchanged.
@@ -224,14 +243,38 @@ for discrete UI actions rather than continuous input streams.
 
 I prefer lazy initialization where creation can safely wait until first use,
 following ASA. The MVI state/channels, parser configuration, refresh mutex, fallback
-theme palettes, selection queue/writer, and preview data use lazy properties. Conditional injected
+theme palettes, and preview data use lazy properties. Conditional injected
 dependencies use Dagger Lazy; release builds do not create the unused logger.
 Compose values keep their lifecycle-aware remember behavior, and cleanup does not
 initialize unused resources.
 
+Feature data and control state belong in `UiState`, without private initialization
+flags, observer jobs, counters, or queues in the ViewModels. Required work starts
+from `init`. The image ID comes through Hilt's [assisted factory](https://developer.android.com/training/dependency-injection/hilt-jetpack#assisted-injection)
+and is kept in initial state, including when the image is missing or a read fails.
+
 The form ViewModel observes Room and starts one refresh per ViewModel instance.
-Repeated refresh taps are coalesced while work is active. Choice taps use one
-FIFO writer so suspended writes cannot reorder accepted input. Cache reads and refresh
+Repeated refresh taps are coalesced while work is active. Choice attempts and their
+pending status stay in state. The action handler submits every accepted tap before
+returning. The singleton repository serializes these writes with a FIFO mutex in
+an injected, supervised app scope, following Android's
+[coroutine lifetime guidance](https://developer.android.com/kotlin/coroutines/coroutines-best-practices#creating-coroutines-business-data-layer).
+Closing the screen cancels UI waiters and observers; submitted writes still finish
+in order. This does not guarantee unfinished writes survive process death: only
+answers already committed to Room are durable across that boundary.
+Failed observers end before a retry; existing loading state coalesces repeated taps.
+Mapping reuses unchanged rows from the current UI content without a separate cache.
+It checks existing rows and response definitions before allocating replacements;
+an answer-only change also retains the response-set and option-list instances.
+The stored definition version selects this fast path before any tree traversal.
+The mapper compares saved answers and updates only changed choice rows through
+the row index kept in state. [Persistent collections](https://github.com/Kotlin/kotlinx.collections.immutable)
+share the remaining row storage, so there is no full-list copy. Unchanged answers
+do not look up their UI rows. Definition refreshes still perform a full projection.
+Image presence is projected with the definition and kept in UI content. The route
+uses that flag and the row index instead of scanning rows on recomposition or
+when preparing image navigation.
+Cache reads and refresh
 have separate state: a fast fetch failure cannot hide a pending cache read, and
 refresh success waits for Room rather than publishing response content directly.
 Saved content and its timestamp remain visible on refresh failure. After a transport
@@ -261,6 +304,9 @@ keys hold only navigation arguments, and each entry owns its ViewModel and saved
 Compose state. Tapping a thumbnail sends its ID through the form's navigation
 output. The image entry resolves current title and URL from saved content through
 ObserveImageUseCase and its own MVI ViewModel, then maps metadata to a UI model.
+The repository observes only the requested image row, with local mapping on IO.
+Answer writes do not rerun this query, and the viewer never searches the full form
+tree on Main.
 A removed image has a missing state; a failed saved-content read has retry.
 
 ## Images
@@ -380,8 +426,8 @@ The sample and the [local edge-case scenarios](feature/form/src/test/resources/f
 are test input only. JVM tests read them as resources, and device tests read the
 same files from test APK assets. They are not packaged in the production app.
 
-The final source was also checked in a fresh local directory without IDE state
-or project build output. Debug app/test builds, all 132 JVM tests, and lint passed
+The documented setup was also checked in a fresh local directory without IDE state
+or project build output. Debug app/test builds, JVM tests, and lint passed
 using the installed Android SDK and an existing Gradle dependency cache.
 
 Check connected devices first, unlock the selected device, and target its serial:
@@ -457,16 +503,31 @@ Baseline measured locally on **2026-10-31**:
 
 | Measurement | Result |
 | --- | --- |
-| JVM logic line coverage | **98.1%** — 689/702 lines |
-| JVM logic branch coverage | **91.3%** — 263/288 branches |
-| JVM tests | **132 passed** |
-| Device tests | **63 passed** |
-| Device-only line coverage, `:app` | **74.9%** |
-| Device-only line coverage, `:form` | **72.8%** |
+| JVM logic line coverage | **98.2%** — 784/798 lines |
+| JVM logic branch coverage | **87.7%** — 442/504 branches |
+| JVM tests | **163 passed** |
+| Device tests, Samsung A23 / API 34 | **69 passed** |
+| Earlier device-only line coverage, `:app` | **74.9%** |
+| Earlier device-only line coverage, `:form` | **72.8%** |
 
 The JVM percentages describe the non-UI logic scope below. UI rendering and
 Android integration have separate device tests. These are recorded results,
 not a live CI badge; regenerate the reports after code changes.
+
+The state-ownership, extension-mapper, domain-policy, and incremental-projection
+refactors passed the JVM
+suites and 80% coverage gate, debug app/device-test assembly, and debug lint.
+Both complete device suites passed on Samsung A23, including a query check that
+answer writes do not reload viewer metadata or the form definition graph.
+Traversal guards also verify that answer projection never reads the document or
+iterates existing rows; unchanged answers do not even look up their row.
+The route's device regression verifies that tapping a choice in a 2,000-row form
+does not traverse rows on Main. JVM checks cover accepted writes finishing in
+order after ViewModel clearing, and bounded known-length, chunked, gzip, and HTTP
+error responses with and without debug logging.
+Schema 2 -> 3 and same-timestamp definition refreshes have device checks. The device coverage percentages
+above are from an earlier instrumented baseline; the latest device run used
+normal debug builds without coverage instrumentation.
 
 Run the JVM suites, generate reports, and enforce the 80% line-coverage minimum:
 

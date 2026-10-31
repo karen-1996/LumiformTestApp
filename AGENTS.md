@@ -9,7 +9,9 @@ They are project-scoped guidance; the user's current instructions take priority.
 - Keep OkHttp, interceptors, base URL, and Retrofit provisioning in `:networking`. Features declare request APIs and create them from the injected Retrofit instance.
 - Keep shared Android `res/` files in `:resources`, including UI strings, icons, XML themes, and configuration XML. Consumers import `com.lumiformtest.resources.R`; Compose theme code stays in `:design`. App-owned non-translatable identity strings, such as `app_name`, belong in `app/src/main/res/values/strings_non_translatable.xml` with `translatable="false"`.
 - Use explicit mappers at data/domain and domain/UI boundaries. Keep DTOs and entities out of domain and UI contracts, and domain models out of screen state.
+- Prefer pure extension functions in named mapper files for stateless conversions. Reuse existing UI rows and response definitions before allocating replacements.
 - Preserve the custom MVI with one action handler for state changes and side effects.
+- Keep feature data and control state in `UiState`, without private state fields or initialization flags in feature ViewModels. Start required work from `init` and supply navigation arguments at creation.
 - Prefer lazy initialization wherever it safely defers object creation, following ASA. Use `by lazy` for reusable Kotlin properties, Dagger `Lazy` for conditional injected dependencies, and `remember` for Compose-owned values. Preserve required lifecycle/configuration timing and avoid initializing unused resources during cleanup.
 - Keep comments short and natural. Explain why a choice was made, without repeating the code.
 - Provide a named Compose preview for every screen and visual component. Use sample UI models and local assets; preview stateless content instead of Hilt routes, and keep previews independent of network and storage.
