@@ -1,9 +1,25 @@
 package com.lumiformtest.form.presentation.screens.form.model
 
+import kotlinx.collections.immutable.PersistentList
+import kotlinx.collections.immutable.PersistentMap
+import kotlinx.collections.immutable.persistentHashMapOf
+
 internal data class FormContentUiModel(
-    val rows: List<FormRowUiModel>,
-    val lastUpdatedEpochMillis: Long
-)
+    val rows: PersistentList<FormRowUiModel>,
+    val lastUpdatedEpochMillis: Long,
+    val definitionVersion: Long? = null,
+    val rowIndexById: Map<Long, Int> = rows.withIndex().associate { it.value.id to it.index },
+    val answers: PersistentMap<Long, ChoiceSelectionUiModel> = persistentHashMapOf(),
+    val hasImages: Boolean = rows.any { it is FormRowUiModel.Image }
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is FormContentUiModel) return false
+        // A changed answer or definition must not trigger a comparison of every row.
+        return definitionVersion == other.definitionVersion && lastUpdatedEpochMillis == other.lastUpdatedEpochMillis &&
+            hasImages == other.hasImages && answers == other.answers && rowIndexById == other.rowIndexById && rows == other.rows
+    }
+}
 
 internal sealed interface FormRowUiModel {
     val id: Long
@@ -61,6 +77,8 @@ internal data class ChoiceOptionUiInput(
     val optionId: Long
 )
 
+internal data class ChoiceWriteAttemptUiModel(val id: Long, val option: ChoiceOptionUiInput)
+
 internal enum class ChoiceWriteFailureReasonUi { UNAVAILABLE, STORAGE, READ_UNAVAILABLE }
 
 internal data class ChoiceWriteFailureUi(
@@ -68,3 +86,5 @@ internal data class ChoiceWriteFailureUi(
     val questionId: Long,
     val reason: ChoiceWriteFailureReasonUi
 )
+
+internal data class ChoiceSelectionUiModel(val responseSetId: Long, val optionIds: Set<Long>)

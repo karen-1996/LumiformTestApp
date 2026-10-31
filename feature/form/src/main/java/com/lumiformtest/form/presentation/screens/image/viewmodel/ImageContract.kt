@@ -9,11 +9,11 @@ import com.lumiformtest.form.presentation.screens.image.model.ImageUiModel
 internal data class ImageUiState(
     val image: ImageUiModel? = null,
     val isLoading: Boolean = true,
-    val hasReadFailure: Boolean = false
+    val hasReadFailure: Boolean = false,
+    val imageId: Long? = null
 ) : ViewState
 
 internal sealed interface ImageAction : Action {
-    data class Initialize(val imageId: Long) : ImageAction
     data class ImageObserved(val image: ImageUiModel?) : ImageAction
     data object ReadFailed : ImageAction
     data object Retry : ImageAction

@@ -1,5 +1,6 @@
 package com.lumiformtest.form.presentation.screens.form.preview
 
+import kotlinx.collections.immutable.toPersistentList
 import com.lumiformtest.form.presentation.screens.form.model.FormContentUiModel
 import com.lumiformtest.form.presentation.screens.form.model.FormRowUiModel
 import com.lumiformtest.form.presentation.screens.form.model.ResponseOptionUiModel
@@ -44,7 +45,7 @@ internal object FormPreviewData {
                 image,
                 FormRowUiModel.Section(5, 2, 2, "Inspection"),
                 question
-            ),
+            ).toPersistentList(),
             lastUpdatedEpochMillis = 1793275200000
         )
     }

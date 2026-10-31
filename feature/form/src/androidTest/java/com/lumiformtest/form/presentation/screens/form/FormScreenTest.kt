@@ -1,5 +1,6 @@
 package com.lumiformtest.form.presentation.screens.form
 
+import kotlinx.collections.immutable.toPersistentList
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.CompositionLocalProvider
@@ -77,7 +78,7 @@ class FormScreenTest {
             FormRowUiModel.Choice(6, 1, 1, "Choose an area", ResponseSetUiModel(
                 101, false, listOf(ResponseOptionUiModel(1, "Entrance", null))
             ))
-        ), 1793275200000)
+        ).toPersistentList(), 1793275200000)
     }
 
     @Test
@@ -96,7 +97,7 @@ class FormScreenTest {
             val density = LocalDensity.current
             CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale)) {
                 LumiformTestAppTheme {
-                    FormScreen(FormUiState(content = FormContentUiModel(rows, 1793275200000), isReadingCache = false), {})
+                    FormScreen(FormUiState(content = FormContentUiModel(rows.toPersistentList(), 1793275200000), isReadingCache = false), {})
                 }
             }
         }
@@ -201,7 +202,7 @@ class FormScreenTest {
         compose.setContent { LumiformTestAppTheme { FormScreen(state, {}) } }
         compose.onNodeWithTag("form_loading").assertIsDisplayed()
         compose.onNodeWithText(compose.activity.getString(R.string.form_empty)).assertDoesNotExist()
-        compose.runOnIdle { state = FormUiState(content = content.copy(rows = emptyList()), isReadingCache = false) }
+        compose.runOnIdle { state = FormUiState(content = content.copy(rows = kotlinx.collections.immutable.persistentListOf()), isReadingCache = false) }
         compose.onNodeWithTag("form_loading").assertDoesNotExist()
         compose.onNodeWithText(compose.activity.getString(R.string.form_empty)).assertIsDisplayed()
     }
@@ -210,7 +211,7 @@ class FormScreenTest {
     fun listPositionSurvivesStateRestoreAndAContentRefresh() {
         val restoration = StateRestorationTester(compose)
         var state by mutableStateOf(FormUiState(
-            content = content.copy(rows = (1L..80L).map { FormRowUiModel.Text(it, 1000, 1, "Question $it") }),
+            content = content.copy(rows = (1L..80L).map { FormRowUiModel.Text(it, 1000, 1, "Question $it") }.toPersistentList()),
             isReadingCache = false
         ))
         restoration.setContent { LumiformTestAppTheme { FormScreen(state, {}) } }
@@ -232,7 +233,7 @@ class FormScreenTest {
                 LumiformTestAppTheme(darkTheme = dark, dynamicColor = false) {
                     Box(Modifier.width(320.dp)) {
                         FormScreen(FormUiState(
-                            content = content.copy(rows = listOf(FormRowUiModel.Text(1, 99, 50, text))),
+                            content = content.copy(rows = listOf(FormRowUiModel.Text(1, 99, 50, text)).toPersistentList()),
                             isReadingCache = false
                         ), {})
                     }
@@ -331,7 +332,7 @@ class FormScreenTest {
                         FormScreen(FormUiState(
                             content = content.copy(rows = listOf(FormRowUiModel.Choice(
                                 2, 1, 50, "Question", ResponseSetUiModel(101, false, listOf(ResponseOptionUiModel(1, text, null))), setOf(1)
-                            ))), isReadingCache = false
+                            )).toPersistentList()), isReadingCache = false
                         ), {})
                     }
                 }
@@ -361,7 +362,7 @@ class FormScreenTest {
         compose.setContent {
             LumiformTestAppTheme {
                 Box(Modifier.width(320.dp)) {
-                    FormScreen(FormUiState(content = content.copy(rows = listOf(question)), isReadingCache = false), {})
+                    FormScreen(FormUiState(content = content.copy(rows = listOf(question).toPersistentList()), isReadingCache = false), {})
                 }
             }
         }
@@ -427,18 +428,17 @@ class FormScreenTest {
         val rows = listOf(FormRowUiModel.Page(1, "Page")) + (2L..90L).map {
             FormRowUiModel.Text(it, 1, 1, "Row $it")
         }
-        var state by mutableStateOf(FormUiState(content = content.copy(rows = rows), isReadingCache = false))
+        var state by mutableStateOf(FormUiState(content = content.copy(rows = rows.toPersistentList()), isReadingCache = false))
         compose.setContent { LumiformTestAppTheme { FormScreen(state, {}) } }
         compose.onNodeWithTag("form_list").performScrollToKey(50L)
         val before = compose.onNodeWithText("Row 50").fetchSemanticsNode().boundsInRoot.top
         compose.runOnIdle {
             state = state.copy(content = state.content!!.copy(rows =
-                listOf(rows.first(), FormRowUiModel.Text(1000, 1, 1, "Inserted")) + rows.drop(1)
-            ))
+                (listOf(rows.first(), FormRowUiModel.Text(1000, 1, 1, "Inserted")) + rows.drop(1)).toPersistentList()))
         }
         assertEquals(before, compose.onNodeWithText("Row 50").fetchSemanticsNode().boundsInRoot.top, 0.1f)
         compose.runOnIdle {
-            state = state.copy(content = state.content!!.copy(rows = state.content!!.rows.filter { it.id !in 2L..30L }))
+            state = state.copy(content = state.content!!.copy(rows = state.content!!.rows.filter { it.id !in 2L..30L }.toPersistentList()))
         }
         assertEquals(before, compose.onNodeWithText("Row 50").fetchSemanticsNode().boundsInRoot.top, 0.1f)
     }
@@ -459,7 +459,7 @@ class FormScreenTest {
             state = state.copy(content = state.content!!.copy(rows = state.content!!.rows.map {
                 if (it is FormRowUiModel.Choice && it.id == 2L)
                     it.copy(responseSet = it.responseSet.copy(options = it.responseSet.options.reversed())) else it
-            }))
+            }.toPersistentList()))
         }
         compose.onNodeWithText("First option").assertIsFocused().assertIsSelected()
         compose.onNodeWithText("Second option").assertIsNotSelected().performClick()
@@ -475,11 +475,10 @@ class FormScreenTest {
             FormRowUiModel.Choice(3, 1, 1, "Multiple question", ResponseSetUiModel(102, true, listOf(
                 ResponseOptionUiModel(1, "First area", null), ResponseOptionUiModel(2, "Second area", null)
             )))
-        ))
+        ).toPersistentList())
     }
 
     private fun selected(content: FormContentUiModel, questionId: Long, selected: Set<Long>) = content.copy(
-        rows = content.rows.map { if (it is FormRowUiModel.Choice && it.id == questionId) it.copy(selectedOptionIds = selected) else it }
-    )
+        rows = content.rows.map { if (it is FormRowUiModel.Choice && it.id == questionId) it.copy(selectedOptionIds = selected) else it }.toPersistentList())
 
 }

@@ -28,7 +28,7 @@ internal fun FormRoute(
     val openImage by rememberUpdatedState(onOpenImage)
     val latestContent by rememberUpdatedState(state.content)
     val preparedLoader = imageTransitionState.preview?.loader
-    val loader = if (state.content?.rows?.any { it is FormRowUiModel.Image } == true) {
+    val loader = if (state.content?.hasImages == true) {
         if (preparedLoader != null) rememberUpdatedState(preparedLoader) else rememberImageLoaderState()
     } else null
     val latestLoader by rememberUpdatedState(loader)
@@ -38,7 +38,9 @@ internal fun FormRoute(
             viewModel.navigateFlow.collect { destination ->
                 when (destination) {
                     is FormNavigationDestination.OpenImage -> {
-                        val row = latestContent?.rows?.firstOrNull { it.id == destination.imageId } as? FormRowUiModel.Image
+                        val content = latestContent
+                        val row = content?.rowIndexById?.get(destination.imageId)
+                            ?.let { content.rows[it] } as? FormRowUiModel.Image
                         imageTransitionState.prepare(row, latestLoader?.value)
                         openImage(destination.imageId)
                     }

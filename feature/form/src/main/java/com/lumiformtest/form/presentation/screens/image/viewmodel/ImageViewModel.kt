@@ -4,44 +4,50 @@ import androidx.lifecycle.viewModelScope
 import com.lumiformtest.base.viewmodel.BaseCoroutineViewModel
 import com.lumiformtest.form.domain.model.ImageObservation
 import com.lumiformtest.form.domain.usecase.ObserveImageUseCase
-import com.lumiformtest.form.presentation.screens.image.mapper.ImageUiMapper
+import com.lumiformtest.form.presentation.screens.image.mapper.toUiModel
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.takeWhile
 
-@HiltViewModel
-internal class ImageViewModel @Inject constructor(
+@HiltViewModel(assistedFactory = ImageViewModel.Factory::class)
+internal class ImageViewModel @AssistedInject constructor(
     private val observeImage: ObserveImageUseCase,
-    private val mapper: ImageUiMapper
-) : BaseCoroutineViewModel<ImageAction, ImageUiState, ImageNavigationDestination, ImageEvent>(ImageUiState()) {
-    private var imageId: Long? = null
-    private var observation: Job? = null
+    @Assisted imageId: Long
+) : BaseCoroutineViewModel<ImageAction, ImageUiState, ImageNavigationDestination, ImageEvent>(
+    initialState = ImageUiState(imageId = imageId)
+) {
+    init {
+        observeSavedImage(imageId)
+    }
 
     override fun onAction(action: ImageAction, prevState: ImageUiState) {
         when (action) {
-            is ImageAction.Initialize -> if (imageId == null) {
-                imageId = action.imageId
-                observeSavedImage(action.imageId)
+            is ImageAction.ImageObserved -> updateState {
+                copy(image = action.image, isLoading = false, hasReadFailure = false)
             }
-            is ImageAction.ImageObserved -> updateState { ImageUiState(image = action.image, isLoading = false) }
             ImageAction.ReadFailed -> updateState { copy(isLoading = false, hasReadFailure = true) }
             ImageAction.Retry -> if (prevState.hasReadFailure && !prevState.isLoading) {
-                imageId?.let(::observeSavedImage)
+                prevState.imageId?.let(::observeSavedImage)
             }
         }
     }
 
     private fun observeSavedImage(id: Long) {
-        observation?.cancel()
         updateState { copy(isLoading = true) }
-        observation = viewModelScope.launch {
-            observeImage(id).collect { result ->
-                sendAction(when (result) {
-                    is ImageObservation.Content -> ImageAction.ImageObserved(result.image?.let(mapper::map))
-                    ImageObservation.ReadFailure -> ImageAction.ReadFailed
-                })
-            }
-        }
+        observeImage(id).onEach { result ->
+            sendAction(when (result) {
+                is ImageObservation.Content -> ImageAction.ImageObserved(result.image?.toUiModel())
+                ImageObservation.ReadFailure -> ImageAction.ReadFailed
+            })
+        }.takeWhile { it != ImageObservation.ReadFailure }.launchIn(viewModelScope)
+    }
+
+    @AssistedFactory
+    interface Factory {
+        fun create(imageId: Long): ImageViewModel
     }
 }

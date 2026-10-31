@@ -1,5 +1,6 @@
 package com.lumiformtest.form.presentation.screens.form.preview
 
+import kotlinx.collections.immutable.toPersistentList
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.lumiformtest.form.presentation.screens.form.FormScreen
@@ -19,7 +20,7 @@ private fun LoadingPreview() = PreviewForm(FormUiState())
 
 @Preview(name = "Empty form", showBackground = true)
 @Composable
-private fun EmptyPreview() = PreviewForm(FormUiState(content = FormPreviewData.content.copy(rows = emptyList()), isReadingCache = false))
+private fun EmptyPreview() = PreviewForm(FormUiState(content = FormPreviewData.content.copy(rows = kotlinx.collections.immutable.persistentListOf()), isReadingCache = false))
 
 @Preview(name = "Initial form failure", showBackground = true)
 @Composable
@@ -40,7 +41,7 @@ private fun CachedFailurePreview() = PreviewForm(FormUiState(
 private fun SingleAnswerPreview() = PreviewForm(FormUiState(
     content = FormPreviewData.content.copy(rows = FormPreviewData.content.rows.map {
         if (it is FormRowUiModel.Choice) it.copy(responseSet = it.responseSet.copy(allowsMultipleSelection = false), selectedOptionIds = setOf(1)) else it
-    }), isReadingCache = false
+    }.toPersistentList()), isReadingCache = false
 ))
 
 @Preview(name = "Multiple answers", showBackground = true)
@@ -48,7 +49,7 @@ private fun SingleAnswerPreview() = PreviewForm(FormUiState(
 private fun MultipleAnswersPreview() = PreviewForm(FormUiState(
     content = FormPreviewData.content.copy(rows = FormPreviewData.content.rows.map {
         if (it is FormRowUiModel.Choice) it.copy(selectedOptionIds = setOf(1, 2)) else it
-    }), isReadingCache = false
+    }.toPersistentList()), isReadingCache = false
 ))
 
 @Preview(name = "Answer save error", showBackground = true)
@@ -65,7 +66,7 @@ private fun DeepHierarchyPreview() = PreviewForm(FormUiState(
         FormRowUiModel.Page(1, "Main page"),
         FormRowUiModel.Section(2, 1, 8, "A deeply nested section with a longer title"),
         FormRowUiModel.Text(3, 2, 9, "This text keeps its width even when the section is deeply nested.")
-    )), isReadingCache = false
+    ).toPersistentList()), isReadingCache = false
 ), darkTheme = true)
 
 @Composable

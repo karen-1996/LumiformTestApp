@@ -6,6 +6,7 @@ composeBom = "2026.09.00"
 lifecycle = "2.11.0"
 navigation3 = "1.2.0"
 coroutines = "1.11.0"
+immutableCollections = "0.5.2"
 serialization = "1.12.0"
 hilt = "2.60.1"
 androidxHilt = "1.4.0"
@@ -21,6 +22,7 @@ okhttp = "5.5.1"
 coil = "3.6.3"
 
 [libraries]
+kotlinx-collections-immutable = { module = "org.jetbrains.kotlinx:kotlinx-collections-immutable", version.ref = "immutableCollections" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
 androidx-compose-ui = { group = "androidx.compose.ui", name = "ui" }

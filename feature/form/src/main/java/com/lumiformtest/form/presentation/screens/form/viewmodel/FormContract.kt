@@ -7,6 +7,7 @@ import com.lumiformtest.base.viewmodel.ViewState
 import com.lumiformtest.form.presentation.screens.form.model.FormContentUiModel
 import com.lumiformtest.form.presentation.screens.form.model.FormRefreshFailureUi
 import com.lumiformtest.form.presentation.screens.form.model.ChoiceOptionUiInput
+import com.lumiformtest.form.presentation.screens.form.model.ChoiceWriteAttemptUiModel
 import com.lumiformtest.form.presentation.screens.form.model.ChoiceWriteFailureUi
 import com.lumiformtest.form.presentation.screens.form.model.ChoiceWriteFailureReasonUi
 
@@ -17,7 +18,9 @@ internal data class FormUiState(
     val isAwaitingSnapshot: Boolean = false,
     val hasReadFailure: Boolean = false,
     val refreshFailure: FormRefreshFailureUi? = null,
-    val choiceWriteFailure: ChoiceWriteFailureUi? = null
+    val choiceWriteFailure: ChoiceWriteFailureUi? = null,
+    val lastChoiceAttemptId: Long = 0,
+    val pendingChoiceWrites: List<ChoiceWriteAttemptUiModel> = emptyList()
 ) : ViewState {
     val isLoading: Boolean
         get() = content == null && !hasReadFailure &&
@@ -25,7 +28,6 @@ internal data class FormUiState(
 }
 
 internal sealed interface FormAction : Action {
-    data object Initialize : FormAction
     data object Refresh : FormAction
     data class ContentObserved(val content: FormContentUiModel?) : FormAction
     data object ReadFailed : FormAction

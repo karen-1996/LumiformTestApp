@@ -10,7 +10,7 @@ import com.lumiformtest.form.domain.model.FormPage
 import com.lumiformtest.form.domain.model.FormSnapshot
 import com.lumiformtest.form.domain.model.ResponseOption
 import com.lumiformtest.form.domain.model.ResponseSet
-import com.lumiformtest.form.presentation.screens.form.mapper.FormUiMapper
+import com.lumiformtest.form.presentation.screens.form.mapper.toUiModel
 import java.time.Instant
 import java.util.concurrent.Executor
 import kotlinx.coroutines.Dispatchers
@@ -51,8 +51,9 @@ class IncrementalFormObservationTest {
             assertEquals(initial.definitionVersion, answered.definitionVersion)
             assertEquals(setOf(1L), answered.selections[10]?.optionIds)
             assertNull("An answer must not query all form nodes", queries.tryReceive().getOrNull())
-            val originalUi = FormUiMapper().map(initial)
-            val answeredUi = FormUiMapper().map(answered)
+            val originalUi = initial.toUiModel()
+            val answeredUi = answered.toUiModel(originalUi)
+            assertSame(originalUi.rowIndexById, answeredUi.rowIndexById)
             local.replaceForm(document("Changed at the same time", false), time)
             val refreshed = withTimeout(5_000) { emitted.receive() }
             assertNotEquals(answered.definitionVersion, refreshed.definitionVersion)
@@ -60,7 +61,7 @@ class IncrementalFormObservationTest {
             assertEquals("Changed at the same time", refreshed.document.pages.single().title)
             assertEquals(false, (refreshed.document.pages.single().items.single() as FormItem.Choice).responseSet.allowsMultipleSelection)
             assertEquals(setOf(1L), refreshed.selections[10]?.optionIds)
-            val refreshedUi = FormUiMapper().map(refreshed)
+            val refreshedUi = refreshed.toUiModel(answeredUi)
             assertEquals("Changed at the same time", (refreshedUi.rows[0] as com.lumiformtest.form.presentation.screens.form.model.FormRowUiModel.Page).title)
         } finally { observer.cancelAndJoin(); database.close(); queries.close(); emitted.close() }
     }

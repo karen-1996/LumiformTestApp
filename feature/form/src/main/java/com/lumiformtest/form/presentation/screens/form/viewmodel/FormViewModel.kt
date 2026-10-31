@@ -4,66 +4,44 @@ import com.lumiformtest.base.viewmodel.BaseCoroutineViewModel
 import androidx.lifecycle.viewModelScope
 import com.lumiformtest.form.di.FormDefaultDispatcher
 import com.lumiformtest.form.domain.model.FormObservation
-import com.lumiformtest.form.domain.model.FormDocument
 import com.lumiformtest.form.domain.model.ChoiceSelectionResult
 import com.lumiformtest.form.domain.model.RefreshFormResult
 import com.lumiformtest.form.domain.usecase.ObserveFormUseCase
 import com.lumiformtest.form.domain.usecase.RefreshFormUseCase
 import com.lumiformtest.form.domain.usecase.ToggleChoiceOptionUseCase
-import com.lumiformtest.form.presentation.screens.form.mapper.FormUiMapper
-import com.lumiformtest.form.presentation.screens.form.model.FormRowUiModel
-import com.lumiformtest.form.presentation.screens.form.model.ChoiceOptionUiInput
+import com.lumiformtest.form.presentation.screens.form.mapper.toDomain
+import com.lumiformtest.form.presentation.screens.form.mapper.toUiModel
+import com.lumiformtest.form.presentation.screens.form.model.ChoiceWriteAttemptUiModel
 import com.lumiformtest.form.presentation.screens.form.model.ChoiceWriteFailureUi
 import com.lumiformtest.form.presentation.screens.form.model.ChoiceWriteFailureReasonUi
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.channels.Channel
 
 @HiltViewModel
 internal class FormViewModel @Inject constructor(
     private val observeForm: ObserveFormUseCase,
     private val refreshForm: RefreshFormUseCase,
     private val toggleChoiceOption: ToggleChoiceOptionUseCase,
-    private val mapper: FormUiMapper,
     @FormDefaultDispatcher private val mappingDispatcher: CoroutineDispatcher
 ) : BaseCoroutineViewModel<FormAction, FormUiState, FormNavigationDestination, FormEvent>(
     initialState = FormUiState()
 ) {
-    private var initialized = false
-    private var observation: Job? = null
-    private var nextChoiceAttempt = 0L
-    private val choiceQueueDelegate = lazy { Channel<ChoiceWriteAttempt>(Channel.UNLIMITED) }
-    private val choiceQueue by choiceQueueDelegate
-    private val choiceWriter by lazy {
-        viewModelScope.launch {
-            for (attempt in choiceQueue) {
-                val failure = when (val result = toggleChoiceOption(mapper.map(attempt.option))) {
-                    ChoiceSelectionResult.Success -> null
-                    is ChoiceSelectionResult.Failure -> mapper.map(result.reason)
-                }
-                sendAction(FormAction.ChoiceWriteFinished(attempt.id, attempt.option.questionId, failure))
-            }
-        }
-    }
-
     init {
-        sendAction(FormAction.Initialize)
+        observeSavedContent()
+        sendAction(FormAction.Refresh)
     }
 
     override fun onAction(action: FormAction, prevState: FormUiState) {
         when (action) {
-            FormAction.Initialize -> if (!initialized) {
-                initialized = true
-                observeSavedContent()
-                sendAction(FormAction.Refresh)
-            }
-
             FormAction.Refresh -> if (!prevState.isRefreshing && !prevState.isAwaitingSnapshot) {
-                if (prevState.hasReadFailure) {
+                if (prevState.hasReadFailure && !prevState.isReadingCache) {
                     updateState { copy(isReadingCache = true) }
                     observeSavedContent()
                 }
@@ -71,7 +49,7 @@ internal class FormViewModel @Inject constructor(
                 viewModelScope.launch {
                     val failure = when (val result = refreshForm()) {
                         RefreshFormResult.Success -> null
-                        is RefreshFormResult.Failure -> mapper.map(result.reason)
+                        is RefreshFormResult.Failure -> result.reason.toUiModel()
                     }
                     sendAction(FormAction.RefreshFinished(failure))
                 }
@@ -98,21 +76,31 @@ internal class FormViewModel @Inject constructor(
 
             is FormAction.OpenImage -> navigateTo(FormNavigationDestination.OpenImage(action.imageId))
             is FormAction.OptionClicked -> {
-                val attempt = ChoiceWriteAttempt(++nextChoiceAttempt, action.option)
-                if (prevState.hasReadFailure) {
-                    updateState { copy(choiceWriteFailure = ChoiceWriteFailureUi(
-                        attempt.id, attempt.option.questionId, ChoiceWriteFailureReasonUi.READ_UNAVAILABLE
-                    )) }
-                } else submitChoice(attempt)
+                updateState {
+                    val attempt = ChoiceWriteAttemptUiModel(lastChoiceAttemptId + 1, action.option)
+                    if (hasReadFailure) copy(
+                        lastChoiceAttemptId = attempt.id,
+                        choiceWriteFailure = ChoiceWriteFailureUi(
+                            attempt.id, attempt.option.questionId, ChoiceWriteFailureReasonUi.READ_UNAVAILABLE
+                        )
+                    ) else copy(lastChoiceAttemptId = attempt.id, pendingChoiceWrites = pendingChoiceWrites + attempt)
+                }
+                if (prevState.pendingChoiceWrites.isEmpty()) writeNextChoice()
             }
-            is FormAction.ChoiceWriteFinished -> updateState {
-                val previous = choiceWriteFailure
-                copy(choiceWriteFailure = when {
-                    previous != null && previous.id > action.attemptId -> previous
-                    action.failure != null -> ChoiceWriteFailureUi(action.attemptId, action.questionId, action.failure)
-                    previous?.questionId == action.questionId && previous.id <= action.attemptId -> null
-                    else -> previous
-                })
+            is FormAction.ChoiceWriteFinished -> if (prevState.pendingChoiceWrites.firstOrNull()?.id == action.attemptId) {
+                updateState {
+                    val previous = choiceWriteFailure
+                    copy(
+                        pendingChoiceWrites = pendingChoiceWrites.drop(1),
+                        choiceWriteFailure = when {
+                            previous != null && previous.id > action.attemptId -> previous
+                            action.failure != null -> ChoiceWriteFailureUi(action.attemptId, action.questionId, action.failure)
+                            previous?.questionId == action.questionId && previous.id <= action.attemptId -> null
+                            else -> previous
+                        }
+                    )
+                }
+                writeNextChoice()
             }
             is FormAction.DismissChoiceFailure -> updateState {
                 if (choiceWriteFailure?.id == action.id) copy(choiceWriteFailure = null) else this
@@ -121,41 +109,30 @@ internal class FormViewModel @Inject constructor(
     }
 
     private fun observeSavedContent() {
-        observation?.cancel()
-        observation = viewModelScope.launch {
-            var previousDocument: FormDocument? = null
-            var previousRows: List<FormRowUiModel> = emptyList()
-            observeForm().collect { result ->
-                when (result) {
-                    is FormObservation.Snapshot -> {
-                        val snapshot = result.value
-                        val content = withContext(mappingDispatcher) {
-                            snapshot?.let {
-                                val rows = if (it.document == previousDocument) previousRows else mapper.mapStructure(it.document)
-                                mapper.applySelections(rows, it)
-                            }
-                        }
-                        previousDocument = snapshot?.document
-                        previousRows = content?.rows.orEmpty()
-                        sendAction(FormAction.ContentObserved(content))
-                    }
-
-                    FormObservation.ReadFailure -> sendAction(FormAction.ReadFailed)
+        observeForm().onEach { result ->
+            when (result) {
+                is FormObservation.Snapshot -> {
+                    val previous = viewState.value.content
+                    val content = withContext(mappingDispatcher) { result.value?.toUiModel(previous) }
+                    sendAction(FormAction.ContentObserved(content))
+                    // The next snapshot must project from the state accepted by the action handler.
+                    viewState.first { it.content === content }
                 }
+
+                FormObservation.ReadFailure -> sendAction(FormAction.ReadFailed)
             }
+        }.takeWhile { it != FormObservation.ReadFailure }.launchIn(viewModelScope)
+    }
+
+    private fun writeNextChoice() {
+        val (id, option) = viewState.value.pendingChoiceWrites.firstOrNull() ?: return
+        // The queue head stays in state until its write finishes.
+        viewModelScope.launch {
+            val failure = when (val result = toggleChoiceOption(option.toDomain())) {
+                ChoiceSelectionResult.Success -> null
+                is ChoiceSelectionResult.Failure -> result.reason.toUiModel()
+            }
+            sendAction(FormAction.ChoiceWriteFinished(id, option.questionId, failure))
         }
     }
-
-    private fun submitChoice(attempt: ChoiceWriteAttempt): Job {
-        // One writer keeps tap order, even when a database write suspends.
-        choiceQueue.trySend(attempt).getOrThrow()
-        return choiceWriter
-    }
-
-    override fun onCleared() {
-        if (choiceQueueDelegate.isInitialized()) choiceQueue.cancel()
-        super.onCleared()
-    }
-
-    private data class ChoiceWriteAttempt(val id: Long, val option: ChoiceOptionUiInput)
 }

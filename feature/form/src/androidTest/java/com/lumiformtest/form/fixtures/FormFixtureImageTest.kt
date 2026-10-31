@@ -1,5 +1,6 @@
 package com.lumiformtest.form.fixtures
 
+import com.lumiformtest.form.presentation.screens.form.mapper.toUiModel
 import android.graphics.Bitmap
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
@@ -30,7 +31,6 @@ import com.lumiformtest.form.data.remote.ImageApi
 import com.lumiformtest.form.data.remote.StoredImageFetcher
 import com.lumiformtest.form.domain.model.FormSnapshot
 import com.lumiformtest.form.presentation.components.LocalFormImageLoader
-import com.lumiformtest.form.presentation.screens.form.mapper.FormUiMapper
 import com.lumiformtest.form.presentation.screens.form.model.FormRowUiModel
 import com.lumiformtest.form.presentation.screens.image.model.ImageUiModel
 import com.lumiformtest.form.presentation.screens.form.FormScreen
@@ -65,7 +65,7 @@ class FormFixtureImageTest {
         val context = compose.activity
         val body = InstrumentationRegistry.getInstrumentation().context.assets
             .open("${FormFixture.ROOT}/valid/image-variants.json").bufferedReader().use { it.readText() }
-        val content = FormUiMapper().map(FormSnapshot(FormJsonParser().parse(body), Instant.EPOCH))
+        val content = FormSnapshot(FormJsonParser().parse(body), Instant.EPOCH).toUiModel()
         val images = content.rows.filterIsInstance<FormRowUiModel.Image>()
         val directory = File(context.filesDir, "fixture-images-${System.nanoTime()}")
         val recovered = AtomicBoolean(false)

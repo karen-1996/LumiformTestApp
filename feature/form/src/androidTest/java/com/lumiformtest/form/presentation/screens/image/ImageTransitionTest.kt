@@ -1,5 +1,8 @@
 package com.lumiformtest.form.presentation.screens.image
 
+import kotlinx.collections.immutable.toPersistentList
+import com.lumiformtest.form.fixtures.toImageObservation
+import kotlinx.coroutines.flow.map
 import android.graphics.Bitmap
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
@@ -41,7 +44,6 @@ import com.lumiformtest.form.presentation.navigation.FormDestination
 import com.lumiformtest.form.presentation.navigation.ProvideImageTransition
 import com.lumiformtest.form.presentation.navigation.rememberFormImageTransitionState
 import com.lumiformtest.form.presentation.components.LocalFormImageLoader
-import com.lumiformtest.form.presentation.screens.image.mapper.ImageUiMapper
 import com.lumiformtest.form.presentation.screens.image.viewmodel.ImageViewModel
 import com.lumiformtest.form.domain.repository.FormRepository
 import com.lumiformtest.form.domain.model.FormObservation
@@ -190,7 +192,7 @@ class ImageTransitionTest {
                                 entryProvider = entryProvider {
                                     entry<FormDestination.Form> {
                                         ProvideImageTransition(this@SharedTransitionLayout, transitionState) {
-                                            FormScreen(FormUiState(content = FormPreviewData.content.copy(rows = rows), isReadingCache = false), {
+                                            FormScreen(FormUiState(content = FormPreviewData.content.copy(rows = rows.toPersistentList()), isReadingCache = false), {
                                                 if (it is FormAction.OpenImage) {
                                                     transitionState.prepare(image, loader)
                                                     stack.add(FormDestination.Image(image.id))
@@ -255,12 +257,12 @@ class ImageTransitionTest {
         val image = FormPreviewData.image.copy(imageUrl = "https://example.com/transition.png")
         val observations = MutableSharedFlow<FormObservation>(replay = 1)
         val repository = object : FormRepository {
-        override fun observeImage(imageId: Long): kotlinx.coroutines.flow.Flow<com.lumiformtest.form.domain.model.ImageObservation> = error("Not used")
             override fun observeForm() = observations
+            override fun observeImage(imageId: Long) = observations.map { it.toImageObservation(imageId) }
             override suspend fun refreshForm(): RefreshFormResult = error("Not used")
             override suspend fun toggleChoiceOption(option: ChoiceOption): ChoiceSelectionResult = error("Not used")
         }
-        val viewModel = ImageViewModel(ObserveImageUseCase(repository), ImageUiMapper())
+        val viewModel = ImageViewModel(ObserveImageUseCase(repository), image.id)
         compose.activityRule.scenario.onActivity { it.viewModelStore.put("image-transition", viewModel) }
         val requests = AtomicInteger()
         val pendingOriginal = CompletableDeferred<Response<ResponseBody>>()
@@ -290,7 +292,7 @@ class ImageTransitionTest {
                                 entryProvider = entryProvider {
                                     entry<FormDestination.Form> {
                                         ProvideImageTransition(this@SharedTransitionLayout, transitionState) {
-                                            val content = FormPreviewData.content.copy(rows = listOf(image))
+                                            val content = FormPreviewData.content.copy(rows = listOf(image).toPersistentList())
                                             FormScreen(FormUiState(content = content, isReadingCache = false), {
                                                 if (it is FormAction.OpenImage) {
                                                     transitionState.prepare(image, loader)

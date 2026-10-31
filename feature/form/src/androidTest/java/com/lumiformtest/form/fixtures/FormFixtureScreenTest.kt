@@ -1,5 +1,6 @@
 package com.lumiformtest.form.fixtures
 
+import com.lumiformtest.form.presentation.screens.form.mapper.toUiModel
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.CompositionLocalProvider
@@ -32,7 +33,6 @@ import com.lumiformtest.form.FormScreenTestActivity
 import com.lumiformtest.form.data.remote.FormJsonParser
 import com.lumiformtest.form.domain.model.FormSnapshot
 import com.lumiformtest.form.presentation.screens.form.components.ChoiceQuestion
-import com.lumiformtest.form.presentation.screens.form.mapper.FormUiMapper
 import com.lumiformtest.form.presentation.screens.form.model.FormRowUiModel
 import com.lumiformtest.form.presentation.screens.form.model.ChoiceOptionUiInput
 import com.lumiformtest.form.presentation.screens.form.FormScreen
@@ -50,7 +50,7 @@ import org.junit.runner.RunWith
 class FormFixtureScreenTest {
     @get:Rule val compose = createAndroidComposeRule<FormScreenTestActivity>()
     private val parser by lazy { FormJsonParser() }
-    private val uiMapper by lazy { FormUiMapper() }
+
 
     @Test
     fun localFixturesReachTheirLastRowInLightDarkAndRtlLayouts() {
@@ -159,5 +159,5 @@ class FormFixtureScreenTest {
 
     private fun read(path: String) = InstrumentationRegistry.getInstrumentation().context.assets.open(path)
         .bufferedReader().use { it.readText() }
-    private fun content(file: String) = uiMapper.map(FormSnapshot(parser.parse(read("${FormFixture.ROOT}/$file")), Instant.EPOCH))
+    private fun content(file: String) = FormSnapshot(parser.parse(read("${FormFixture.ROOT}/$file")), Instant.EPOCH).toUiModel()
 }

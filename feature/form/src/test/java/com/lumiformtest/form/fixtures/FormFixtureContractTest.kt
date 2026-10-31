@@ -2,7 +2,7 @@ package com.lumiformtest.form.fixtures
 
 import com.lumiformtest.form.data.mapper.toDomain
 import com.lumiformtest.form.data.mapper.toStorage
-import com.lumiformtest.form.presentation.screens.form.mapper.FormUiMapper
+import com.lumiformtest.form.presentation.screens.form.mapper.toUiModel
 import com.lumiformtest.form.data.remote.FormJsonParser
 import com.lumiformtest.form.data.remote.InvalidFormContentException
 import com.lumiformtest.form.domain.model.FormSnapshot
@@ -33,7 +33,7 @@ internal class FormFixtureContractTest(private val fixture: FormFixture) {
         val shuffled = stored.copy(nodes = stored.nodes.shuffled(Random(42)),
             responseSets = stored.responseSets.reversed().map { it.copy(responses = it.responses.reversed()) })
         assertEquals(fixture.file, snapshot, shuffled.toDomain())
-        val ui = FormUiMapper().map(snapshot)
+        val ui = snapshot.toUiModel()
         assertEquals(fixture.file, fixture.pages, document.pages.size)
         assertEquals(fixture.file, fixture.rows, ui.rows.size)
         assertEquals(fixture.file, fixture.lastId, ui.rows.lastOrNull()?.id)

@@ -18,12 +18,13 @@ import com.lumiformtest.form.domain.repository.FormRepository
 import com.lumiformtest.form.domain.usecase.ObserveFormUseCase
 import com.lumiformtest.form.domain.usecase.RefreshFormUseCase
 import com.lumiformtest.form.domain.usecase.ToggleChoiceOptionUseCase
-import com.lumiformtest.form.presentation.screens.form.mapper.FormUiMapper
 import com.lumiformtest.form.presentation.screens.form.model.ChoiceOptionUiInput
 import com.lumiformtest.form.presentation.screens.form.model.ChoiceWriteFailureReasonUi
 import com.lumiformtest.form.presentation.screens.form.model.FormRefreshFailureUi
 import com.lumiformtest.form.presentation.screens.form.model.FormRowUiModel
 import java.time.Instant
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -33,6 +34,7 @@ import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.transformWhile
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
@@ -192,17 +194,38 @@ class FormViewModelTest {
     }
 
     @Test
-    fun `duplicate initialization and repeated refresh taps do not create more work`() = runTest(dispatcher) {
+    fun `startup and repeated refresh taps keep one observer and one refresh`() = runTest(dispatcher) {
         val repository = FakeRepository(FormObservation.Snapshot(saved))
         val viewModel = create(repository)
         repeat(5) {
-            viewModel.sendAction(FormAction.Initialize)
             viewModel.sendAction(FormAction.Refresh)
         }
         runCurrent()
         assertEquals(1, repository.observeCalls)
         assertEquals(1, repository.refreshCalls)
         assertEquals(1, repository.activeObservers)
+    }
+
+    @Test
+    fun `refresh taps do not restart a pending cache retry after remote work finishes`() = runTest(dispatcher) {
+        val repository = FakeRepository(FormObservation.ReadFailure).apply { refresh = { RefreshFormResult.Success } }
+        val viewModel = create(repository)
+        runCurrent()
+        repository.observations.resetReplayCache()
+        viewModel.sendAction(FormAction.Refresh)
+        runCurrent()
+        assertTrue(viewModel.viewState.value.isReadingCache)
+        val observeCalls = repository.observeCalls
+        repeat(3) {
+            viewModel.sendAction(FormAction.Refresh)
+            runCurrent()
+        }
+        assertEquals(observeCalls, repository.observeCalls)
+        assertEquals(1, repository.activeObservers)
+        repository.observations.emit(FormObservation.Snapshot(saved))
+        runCurrent()
+        assertEquals("Saved", viewModel.title())
+        assertFalse(viewModel.viewState.value.hasReadFailure)
     }
 
     @Test
@@ -286,10 +309,31 @@ class FormViewModelTest {
         inputs.forEach { viewModel.sendAction(FormAction.OptionClicked(it)) }
         runCurrent()
         assertEquals(listOf(ChoiceOption(10, 100, 1)), repository.toggles)
+        assertEquals(inputs, viewModel.viewState.value.pendingChoiceWrites.map { it.option })
+        assertEquals(3, viewModel.viewState.value.lastChoiceAttemptId)
         assertTrue(viewModel.viewState.value.isRefreshing)
         finish.complete(Unit)
         runCurrent()
         assertEquals(inputs.map { ChoiceOption(it.questionId, it.responseSetId, it.optionId) }, repository.toggles)
+        assertTrue(viewModel.viewState.value.pendingChoiceWrites.isEmpty())
+    }
+
+    @Test
+    fun `a stale choice completion cannot remove or restart the active write`() = runTest(dispatcher) {
+        val finish = CompletableDeferred<ChoiceSelectionResult>()
+        val repository = FakeRepository(FormObservation.Snapshot(choiceSnapshot())).apply { toggle = { finish.await() } }
+        val viewModel = create(repository)
+        viewModel.sendAction(FormAction.OptionClicked(ChoiceOptionUiInput(10, 100, 1)))
+        runCurrent()
+        val pending = viewModel.viewState.value.pendingChoiceWrites
+        viewModel.sendAction(FormAction.ChoiceWriteFinished(99, 10, ChoiceWriteFailureReasonUi.STORAGE))
+        runCurrent()
+        assertEquals(pending, viewModel.viewState.value.pendingChoiceWrites)
+        assertEquals(1, repository.toggles.size)
+        assertNull(viewModel.viewState.value.choiceWriteFailure)
+        finish.complete(ChoiceSelectionResult.Success)
+        runCurrent()
+        assertTrue(viewModel.viewState.value.pendingChoiceWrites.isEmpty())
     }
 
     @Test
@@ -388,6 +432,38 @@ class FormViewModelTest {
         assertNull(viewModel.viewState.value.choiceWriteFailure)
     }
 
+    @Test
+    fun `back to back saved answers wait for accepted state and never remap definitions`() = runTest(dispatcher) {
+        var traversals = 0
+        val set = ResponseSet(100, true, listOf(ResponseOption(1, "One", null), ResponseOption(2, "Two", null)))
+        val page = FormPage(1, "Page", listOf(FormItem.Choice(10, "Choice", set)))
+        val pages = object : AbstractList<FormPage>() {
+            override val size: Int get() = 1
+            override fun get(index: Int) = listOf(page)[index]
+            override fun iterator(): Iterator<FormPage> {
+                check(++traversals == 1) { "The same definition must only be projected once" }
+                return listOf(page).iterator()
+            }
+        }
+        val snapshot = FormSnapshot(FormDocument(pages), Instant.EPOCH, definitionVersion = 7)
+        val repository = object : FormRepository {
+            override fun observeForm() = flow {
+                emit(FormObservation.Snapshot(snapshot))
+                repeat(20) { index ->
+                    emit(FormObservation.Snapshot(snapshot.copy(selections = mapOf(10L to ChoiceSelection(100, setOf((index % 2 + 1).toLong()))))))
+                }
+            }
+            override fun observeImage(imageId: Long): kotlinx.coroutines.flow.Flow<com.lumiformtest.form.domain.model.ImageObservation> = error("Not used")
+            override suspend fun refreshForm(): RefreshFormResult = awaitCancellation()
+            override suspend fun toggleChoiceOption(option: ChoiceOption) = ChoiceSelectionResult.Success
+        }
+        val model = FormViewModel(ObserveFormUseCase(repository), RefreshFormUseCase(repository), ToggleChoiceOptionUseCase(repository),
+            UnconfinedTestDispatcher(testScheduler)).also { store.put("projection", it) }
+        runCurrent()
+        assertEquals(setOf(2L), model.selected(10))
+        assertEquals(1, traversals)
+    }
+
     private fun choiceSnapshot(selected: Set<Long> = emptySet()): FormSnapshot {
         val set = ResponseSet(100, true, listOf(ResponseOption(1, "One", null), ResponseOption(2, "Two", null)))
         return saved.copy(
@@ -402,29 +478,32 @@ class FormViewModelTest {
         (requireNotNull(viewState.value.content).rows.first { it.id == id } as FormRowUiModel.Choice).selectedOptionIds
 
     private fun create(repository: FakeRepository) = FormViewModel(
-        ObserveFormUseCase(repository), RefreshFormUseCase(repository), ToggleChoiceOptionUseCase(repository), FormUiMapper(), dispatcher
+        ObserveFormUseCase(repository), RefreshFormUseCase(repository), ToggleChoiceOptionUseCase(repository), dispatcher
     ).also { store.put("form-${nextKey++}", it) }
 
     private fun FormViewModel.title() = (viewState.value.content?.rows?.first() as? FormRowUiModel.Page)?.title
 
     private fun snapshot(title: String) = FormSnapshot(
-        FormDocument(listOf(FormPage(1, title, emptyList()))), Instant.parse("2026-10-29T12:00:00Z")
+        FormDocument(listOf(FormPage(1, title, emptyList()))), Instant.parse("2026-10-29T12:00:00Z"),
+        definitionVersion = title.hashCode().toLong()
     )
 
     private class FakeRepository(initial: FormObservation? = null) : FormRepository {
-        override fun observeImage(imageId: Long): kotlinx.coroutines.flow.Flow<com.lumiformtest.form.domain.model.ImageObservation> = error("Not used")
         val observations by lazy { MutableSharedFlow<FormObservation>(replay = 1).apply { initial?.let { tryEmit(it) } } }
         var observeCalls = 0
         var activeObservers = 0
         var refreshCalls = 0
         var refresh: suspend () -> RefreshFormResult = { awaitCancellation() }
+        private val choiceMutex by lazy { Mutex() }
         val toggles by lazy { mutableListOf<ChoiceOption>() }
         var toggle: suspend (ChoiceOption) -> ChoiceSelectionResult = { ChoiceSelectionResult.Success }
 
-        override suspend fun toggleChoiceOption(option: ChoiceOption): ChoiceSelectionResult {
+        override suspend fun toggleChoiceOption(option: ChoiceOption): ChoiceSelectionResult = choiceMutex.withLock {
             toggles += option
-            return toggle(option)
+            toggle(option)
         }
+
+        override fun observeImage(imageId: Long): kotlinx.coroutines.flow.Flow<com.lumiformtest.form.domain.model.ImageObservation> = error("Not used")
 
         override fun observeForm() = flow {
             observeCalls++
