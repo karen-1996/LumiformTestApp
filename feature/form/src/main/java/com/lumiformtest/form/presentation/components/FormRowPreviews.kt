@@ -1,8 +1,11 @@
 package com.lumiformtest.form.presentation.components
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -28,6 +31,27 @@ private fun SectionRowPreview() = PreviewRow(FormRowUiModel.Section(2, 1, 3, "Sa
 @Preview(name = "Nested section · dark", showBackground = true)
 @Composable
 private fun DarkSectionRowPreview() = PreviewRow(FormRowUiModel.Section(2, 1, 3, "Safety inspection"), darkTheme = true)
+
+@Preview(name = "Section hierarchy and readable minimum", showBackground = true, widthDp = 360, heightDp = 640)
+@Composable
+private fun SectionHierarchyPreview() = PreviewHierarchy()
+
+@Preview(name = "Section hierarchy · dark · large text", showBackground = true, widthDp = 360, heightDp = 640, fontScale = 2f)
+@Composable
+private fun LargeSectionHierarchyPreview() = PreviewHierarchy(darkTheme = true)
+
+@Composable
+private fun PreviewHierarchy(darkTheme: Boolean = false) {
+    FormPreviewTheme(darkTheme = darkTheme) {
+        Surface {
+            Column(Modifier.verticalScroll(rememberScrollState()).padding(Dimensions.screenPadding)) {
+                FormPreviewData.hierarchyRows.forEach { row ->
+                    FormRow(row, choicesEnabled = false, onImageClick = {}, onChoiceClick = {})
+                }
+            }
+        }
+    }
+}
 
 @Preview(name = "Text", showBackground = true, widthDp = 320, fontScale = 1.5f)
 @Composable

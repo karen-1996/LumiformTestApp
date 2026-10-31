@@ -6,6 +6,17 @@ import com.lumiformtest.form.presentation.model.ResponseOptionUiModel
 import com.lumiformtest.form.presentation.model.ResponseSetUiModel
 
 internal object FormPreviewData {
+    val hierarchyRows by lazy {
+        listOf(
+            FormRowUiModel.Page(1, "Page heading"),
+            FormRowUiModel.Section(2, 1, 1, "Section level 1"),
+            FormRowUiModel.Section(3, 2, 2, "Section level 2"),
+            FormRowUiModel.Section(4, 3, 3, "Section level 3"),
+            FormRowUiModel.Section(5, 4, 4, "Section level 4"),
+            FormRowUiModel.Section(6, 5, 40, "Deep section at the minimum"),
+            FormRowUiModel.Text(7, 6, 41, "Question text stays below section headings.")
+        )
+    }
     val question by lazy {
         FormRowUiModel.Choice(
             6, 5, 3, "Which areas were inspected?",

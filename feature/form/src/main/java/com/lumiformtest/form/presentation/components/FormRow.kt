@@ -19,8 +19,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.Dp
 import com.lumiformtest.design.theme.Dimensions
+import com.lumiformtest.design.theme.HierarchyTypography
 import com.lumiformtest.form.presentation.model.FormRowUiModel
 import com.lumiformtest.form.presentation.model.ChoiceOptionUiInput
 import com.lumiformtest.form.presentation.navigation.sharedImageModifier
@@ -49,7 +51,7 @@ internal fun FormRow(
             )
             is FormRowUiModel.Section -> Text(
                 row.title, modifier = Modifier.padding(contentPadding).padding(top = Dimensions.spacingSmall).semantics { heading() },
-                style = if (row.depth == 1) MaterialTheme.typography.titleLarge else MaterialTheme.typography.titleMedium,
+                style = HierarchyTypography.section(row.depth),
                 color = colorResource(R.color.form_section_heading)
             )
             is FormRowUiModel.Text -> Text(row.text, modifier = Modifier.padding(contentPadding), style = MaterialTheme.typography.bodyMedium)
@@ -64,7 +66,12 @@ internal fun FormRow(
                         .clickable(role = Role.Button, onClickLabel = openLabel) { onImageClick(row.id) }
                         .semantics { contentDescription = openLabel }.testTag("image_thumbnail_${row.id}")
                 )
-                Text(row.title, style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    row.title,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontFamily = FontFamily.Monospace,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
             is FormRowUiModel.Choice -> ChoiceQuestion(row, choicesEnabled, onChoiceClick, contentPadding)
         }

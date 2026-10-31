@@ -81,6 +81,48 @@ class FormScreenTest {
     }
 
     @Test
+    fun sectionFontsDecreaseAcrossDepthsAndKeepAReadableMinimumAtLargeFontScale() {
+        val rows = listOf(
+            FormRowUiModel.Page(1, "Page"),
+            FormRowUiModel.Section(2, 1, 1, "Level 1"),
+            FormRowUiModel.Section(3, 2, 2, "Level 2"),
+            FormRowUiModel.Section(4, 3, 3, "Level 3"),
+            FormRowUiModel.Section(5, 4, 4, "Level 4"),
+            FormRowUiModel.Section(6, 5, 40, "Deep minimum"),
+            FormRowUiModel.Text(7, 6, 41, "Question")
+        )
+        var fontScale by mutableStateOf(1f)
+        compose.setContent {
+            val density = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale)) {
+                LumiformTestAppTheme {
+                    FormScreen(FormUiState(content = FormContentUiModel(rows, 1793275200000), isReadingCache = false), {})
+                }
+            }
+        }
+        for (scale in listOf(1f, 2f)) {
+            compose.runOnIdle { fontScale = scale }
+            val sizes = rows.map { row ->
+                compose.onNodeWithTag("form_list").performScrollToKey(row.id)
+                val text = when (row) {
+                    is FormRowUiModel.Page -> row.title
+                    is FormRowUiModel.Section -> row.title
+                    is FormRowUiModel.Text -> row.text
+                    else -> error("This fixture contains only text rows")
+                }
+                val layouts = mutableListOf<TextLayoutResult>()
+                compose.onNodeWithText(text).assertIsDisplayed()
+                    .performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
+                layouts.single().layoutInput.style.fontSize.value
+            }
+            assertTrue("Page and the first four section levels must decrease: $sizes",
+                sizes.take(5).zipWithNext().all { (parent, child) -> parent > child })
+            assertEquals("Deep sections keep the readable minimum", sizes[4], sizes[5])
+            assertTrue("Section minimum stays above question text", sizes[5] > sizes[6])
+        }
+    }
+
+    @Test
     fun hierarchyIncludesEveryRowKindAndAccessibleHeadings() {
         compose.setContent {
             LumiformTestAppTheme { FormScreen(FormUiState(content = content, isReadingCache = false), {}) }
