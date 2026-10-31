@@ -2,6 +2,8 @@ https://github.com/user-attachments/assets/162c2b8e-dcaa-460c-bf28-4024768a74a3
 
 [Download the demo](docs/videos/lumiform-demo.mp4)
 
+[Install the Android debug APK (1.0.1)](https://github.com/karen-1996/LumiformTestApp/releases/download/v1.0.1-debug/LumiformTestApp-1.0.1-debug.apk) · Android 8.0+
+
 # Lumiform Android Challenge
 
 My implementation of the Lumiform Android coding challenge.
