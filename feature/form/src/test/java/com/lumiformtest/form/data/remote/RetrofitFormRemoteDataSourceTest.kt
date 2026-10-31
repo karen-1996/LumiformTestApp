@@ -1,6 +1,5 @@
 package com.lumiformtest.form.data.remote
 
-import com.lumiformtest.form.data.mapper.FormDataMapper
 import com.lumiformtest.networking.NetworkConnectivity
 import dagger.Lazy
 import java.io.IOException
@@ -22,6 +21,8 @@ import org.junit.Test
 import retrofit2.HttpException
 import retrofit2.Retrofit
 import retrofit2.Response
+import okhttp3.OkHttpClient
+import com.lumiformtest.networking.ResponseSizeLimitInterceptor
 import okhttp3.ResponseBody
 
 class RetrofitFormRemoteDataSourceTest {
@@ -101,7 +102,7 @@ class RetrofitFormRemoteDataSourceTest {
                 throw IOException("Cancelled transport")
             }
         }
-        val source = RetrofitFormRemoteDataSource(api, FormJsonParser(FormDataMapper()), Dispatchers.IO, Lazy {
+        val source = RetrofitFormRemoteDataSource(api, FormJsonParser(com.lumiformtest.form.data.mapper.FormDataMapper()), Dispatchers.IO, Lazy {
             connectivityCreated = true
             NetworkConnectivity { false }
         })
@@ -118,8 +119,22 @@ class RetrofitFormRemoteDataSourceTest {
         assertTrue(source.fetchForm().pages.isEmpty())
     }
 
+    private val client by lazy { OkHttpClient.Builder().addInterceptor(ResponseSizeLimitInterceptor()).build() }
+
+    @Test
+    fun `oversized form is invalid content without checking connectivity`() {
+        val body = " ".repeat(ResponseSizeLimitInterceptor.MAX_TEXT_RESPONSE_BYTES.toInt() + 1)
+        for (response in listOf(MockResponse.Builder().body(body).build(),
+            MockResponse.Builder().chunkedBody(body, 8192).build())) {
+            server.enqueue(response)
+            assertThrows(InvalidFormContentException::class.java) {
+                runBlocking { source(Lazy { error("A size violation is not an offline failure") }).fetchForm() }
+            }
+        }
+    }
+
     private fun source(connectivity: Lazy<NetworkConnectivity> = Lazy { NetworkConnectivity { true } }): RetrofitFormRemoteDataSource {
-        val api = Retrofit.Builder().baseUrl(server.url("/")).build().create(FormApi::class.java)
-        return RetrofitFormRemoteDataSource(api, FormJsonParser(FormDataMapper()), Dispatchers.IO, connectivity)
+        val api = Retrofit.Builder().baseUrl(server.url("/")).client(client).build().create(FormApi::class.java)
+        return RetrofitFormRemoteDataSource(api, FormJsonParser(com.lumiformtest.form.data.mapper.FormDataMapper()), Dispatchers.IO, connectivity)
     }
 }

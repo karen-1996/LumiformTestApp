@@ -15,6 +15,7 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 import okhttp3.OkHttpClient
 import com.lumiformtest.networking.NetworkLoggingInterceptor
+import com.lumiformtest.networking.ResponseSizeLimitInterceptor
 import retrofit2.Retrofit
 
 @Module
@@ -45,6 +46,8 @@ internal object NetworkModule {
             // Debug logs form bodies and image headers. Release creates no logger.
             if (BuildConfig.DEBUG) addInterceptor(loggingInterceptor.get())
         }
+        // Runs before the logger reads a response, including decoded gzip and HTTP errors.
+        .addInterceptor(ResponseSizeLimitInterceptor())
         .connectTimeout(IO_TIMEOUT_SECONDS, TimeUnit.SECONDS)
         .readTimeout(IO_TIMEOUT_SECONDS, TimeUnit.SECONDS)
         .writeTimeout(IO_TIMEOUT_SECONDS, TimeUnit.SECONDS)

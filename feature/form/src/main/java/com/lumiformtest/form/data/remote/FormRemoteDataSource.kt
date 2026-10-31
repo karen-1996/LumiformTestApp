@@ -3,6 +3,7 @@ package com.lumiformtest.form.data.remote
 import com.lumiformtest.form.di.FormIoDispatcher
 import com.lumiformtest.form.domain.model.FormDocument
 import com.lumiformtest.networking.NetworkConnectivity
+import com.lumiformtest.networking.ResponseTooLargeException
 import dagger.Lazy
 import java.io.IOException
 import javax.inject.Inject
@@ -32,6 +33,9 @@ internal class RetrofitFormRemoteDataSource @Inject constructor(
             }
             val body = response.body() ?: throw InvalidFormContentException("The form response has no body")
             body.use { parser.parse(it.string()) }
+        } catch (error: ResponseTooLargeException) {
+            currentCoroutineContext().ensureActive()
+            throw InvalidFormContentException("The form response is too large", error)
         } catch (error: IOException) {
             currentCoroutineContext().ensureActive()
             // A failed request alone does not mean the device is offline.
