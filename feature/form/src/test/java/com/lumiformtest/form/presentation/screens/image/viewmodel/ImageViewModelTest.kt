@@ -96,6 +96,7 @@ class ImageViewModelTest {
     ))
 
     private class FakeRepository(initial: FormObservation) : FormRepository {
+        override fun observeImage(imageId: Long): kotlinx.coroutines.flow.Flow<com.lumiformtest.form.domain.model.ImageObservation> = error("Not used")
         val saved = MutableStateFlow(initial)
         var observers = 0
         var refreshes = 0

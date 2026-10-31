@@ -1,5 +1,6 @@
 package com.lumiformtest.form.data.local.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -8,7 +9,8 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "form_metadata")
 internal data class FormMetadataEntity(
     @PrimaryKey val id: Int = 0,
-    val lastUpdatedMillis: Long
+    val lastUpdatedMillis: Long,
+    @ColumnInfo(defaultValue = "0") val definitionVersion: Long = 0
 )
 
 @Entity(

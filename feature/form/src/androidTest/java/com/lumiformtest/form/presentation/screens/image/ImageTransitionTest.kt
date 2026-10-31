@@ -255,6 +255,7 @@ class ImageTransitionTest {
         val image = FormPreviewData.image.copy(imageUrl = "https://example.com/transition.png")
         val observations = MutableSharedFlow<FormObservation>(replay = 1)
         val repository = object : FormRepository {
+        override fun observeImage(imageId: Long): kotlinx.coroutines.flow.Flow<com.lumiformtest.form.domain.model.ImageObservation> = error("Not used")
             override fun observeForm() = observations
             override suspend fun refreshForm(): RefreshFormResult = error("Not used")
             override suspend fun toggleChoiceOption(option: ChoiceOption): ChoiceSelectionResult = error("Not used")

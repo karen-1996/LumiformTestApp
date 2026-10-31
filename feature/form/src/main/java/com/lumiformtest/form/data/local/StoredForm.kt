@@ -23,3 +23,17 @@ internal data class StoredResponseSet(
     @Relation(parentColumn = "id", entityColumn = "responseSetId")
     val responses: List<ResponseOptionEntity>
 )
+
+internal data class StoredFormDefinition(
+    @Embedded val metadata: FormMetadataEntity,
+    @Relation(parentColumn = "id", entityColumn = "snapshotId")
+    val nodes: List<FormNodeEntity>,
+    @Relation(parentColumn = "id", entityColumn = "snapshotId", entity = ResponseSetEntity::class)
+    val responseSets: List<StoredResponseSet>
+)
+
+internal data class StoredFormAnswers(
+    @Embedded val metadata: FormMetadataEntity,
+    @Relation(parentColumn = "id", entityColumn = "snapshotId")
+    val selections: List<SelectedResponseEntity>
+)

@@ -5,6 +5,8 @@ import com.lumiformtest.form.data.local.FormStorageException
 import com.lumiformtest.form.data.remote.FormRemoteDataSource
 import com.lumiformtest.form.data.remote.InvalidFormContentException
 import com.lumiformtest.form.data.remote.NoInternetConnectionException
+import com.lumiformtest.form.domain.model.FormImage
+import com.lumiformtest.form.domain.model.ImageObservation
 import com.lumiformtest.form.domain.model.FormObservation
 import com.lumiformtest.form.domain.model.ChoiceOption
 import com.lumiformtest.form.domain.model.ChoiceSelectionResult
@@ -26,6 +28,8 @@ import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -183,6 +187,7 @@ class OfflineFormRepositoryTest {
     @Test
     fun `saved content read failures become a domain result`() = runTest {
         val local = object : FormLocalDataSource {
+            override fun observeImage(imageId: Long) = flowOf<FormImage?>(null)
             override fun observeForm() = flow<FormSnapshot?> { throw FormStorageException("Cannot read") }
             override suspend fun replaceForm(document: FormDocument, lastUpdated: Instant) = Unit
             override suspend fun toggleChoiceOption(option: ChoiceOption) = ChoiceSelectionResult.Success
@@ -196,13 +201,17 @@ class OfflineFormRepositoryTest {
     fun `observation does not hide cancellation or programming errors`() {
         for (error in listOf(CancellationException("Stopped"), IllegalStateException("Bug"))) {
             val local = object : FormLocalDataSource {
-                override fun observeForm() = flow<FormSnapshot?> { throw error }
+                override fun observeImage(imageId: Long) = flowOf<FormImage?>(null)
+            override fun observeForm() = flow<FormSnapshot?> { throw error }
                 override suspend fun replaceForm(document: FormDocument, lastUpdated: Instant) = Unit
             override suspend fun toggleChoiceOption(option: ChoiceOption) = ChoiceSelectionResult.Success
             }
-            val repository = OfflineFormRepository(FormRemoteDataSource { document("New") }, local, clock)
-
-            val thrown = assertThrows(error.javaClass) { runTest { repository.observeForm().first() } }
+            val thrown = assertThrows(error.javaClass) {
+                runTest {
+                    val repository = OfflineFormRepository(FormRemoteDataSource { document("New") }, local, clock)
+                    repository.observeForm().first()
+                }
+            }
             assertEquals(error, thrown)
         }
     }
@@ -218,17 +227,50 @@ class OfflineFormRepositoryTest {
     }
 
     @Test
-    fun `selection storage errors are typed while cancellation and programming errors propagate`() {
+    fun `selection storage errors are typed while cancellation and programming errors propagate`() = runTest {
         val local = FakeLocal(saved)
         val repository = OfflineFormRepository(FormRemoteDataSource { document("New") }, local, clock)
         local.toggle = { throw FormStorageException("Cannot save") }
-        runTest {
-            assertEquals(ChoiceSelectionResult.Failure(ChoiceSelectionFailure.STORAGE), repository.toggleChoiceOption(ChoiceOption(10, 100, 1)))
-        }
+        assertEquals(ChoiceSelectionResult.Failure(ChoiceSelectionFailure.STORAGE), repository.toggleChoiceOption(ChoiceOption(10, 100, 1)))
         for (error in listOf(CancellationException("Stopped"), IllegalStateException("Bug"))) {
             local.toggle = { throw error }
-            val thrown = assertThrows(error.javaClass) { runTest { repository.toggleChoiceOption(ChoiceOption(10, 100, 1)) } }
-            assertEquals(error, thrown)
+            try {
+                repository.toggleChoiceOption(ChoiceOption(10, 100, 1))
+                throw AssertionError("The original failure must propagate")
+            } catch (actual: Exception) {
+                assertEquals(error.javaClass, actual.javaClass)
+                assertEquals(error.message, actual.message)
+            }
+        }
+        local.toggle = { ChoiceSelectionResult.Success }
+        assertEquals(ChoiceSelectionResult.Success, repository.toggleChoiceOption(ChoiceOption(10, 100, 1)))
+    }
+
+    @Test
+    fun `image observation requests only the selected ID and exposes missing metadata`() = runTest {
+        val image = FormImage(9, "Saved image", "https://example.com/a")
+        val local = FakeLocal(saved).apply {
+            imageRead = { id -> assertEquals(9L, id); flowOf(image, null) }
+        }
+        val repository = OfflineFormRepository(FormRemoteDataSource { error("Image reads must not fetch") }, local, clock)
+        assertEquals(listOf(ImageObservation.Content(image), ImageObservation.Content(null)),
+            repository.observeImage(9).toList())
+    }
+
+    @Test
+    fun `image storage errors become read failures while cancellation and bugs propagate`() = runTest {
+        val local = FakeLocal(saved)
+        val repository = OfflineFormRepository(FormRemoteDataSource { error("Not used") }, local, clock)
+        local.imageRead = { flow { throw FormStorageException("Cannot read image") } }
+        assertEquals(ImageObservation.ReadFailure, repository.observeImage(9).first())
+        for (error in listOf(CancellationException("Stopped"), IllegalStateException("Bug"))) {
+            local.imageRead = { flow { throw error } }
+            try {
+                repository.observeImage(9).first()
+                throw AssertionError("The original failure must propagate")
+            } catch (actual: Exception) {
+                assertEquals(error, actual)
+            }
         }
     }
 
@@ -241,6 +283,8 @@ class OfflineFormRepositoryTest {
         var toggle: suspend (ChoiceOption) -> ChoiceSelectionResult = { ChoiceSelectionResult.Success }
         override suspend fun toggleChoiceOption(option: ChoiceOption) = toggle(option)
 
+        var imageRead: (Long) -> kotlinx.coroutines.flow.Flow<FormImage?> = { flowOf(null) }
+        override fun observeImage(imageId: Long) = imageRead(imageId)
         override fun observeForm() = state
 
         override suspend fun replaceForm(document: FormDocument, lastUpdated: Instant) {

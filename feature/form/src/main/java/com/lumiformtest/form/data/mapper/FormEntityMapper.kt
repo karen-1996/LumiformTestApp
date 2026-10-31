@@ -98,7 +98,7 @@ internal fun StoredForm.toDomain(): FormSnapshot {
     }
     if (visited != stored.nodes.size) throw FormStorageException("Saved content has unreachable nodes")
     return FormSnapshot(
-        FormDocument(pages), Instant.ofEpochMilli(stored.metadata.lastUpdatedMillis), stored.toSelections()
+        FormDocument(pages), Instant.ofEpochMilli(stored.metadata.lastUpdatedMillis), stored.toSelections(), stored.metadata.definitionVersion
     )
 }
 

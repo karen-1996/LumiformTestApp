@@ -10,7 +10,7 @@ import com.lumiformtest.form.data.local.entity.SelectedResponseEntity
 
 @Database(
     entities = [FormMetadataEntity::class, FormNodeEntity::class, ResponseSetEntity::class, ResponseOptionEntity::class, SelectedResponseEntity::class],
-    version = 2,
+    version = 3,
     exportSchema = true
 )
 internal abstract class FormDatabase : RoomDatabase() {

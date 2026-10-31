@@ -45,7 +45,7 @@ class FormMigrationTest {
         }
         helper.runMigrationsAndValidate(name, 2, true, MIGRATION_1_2).close()
         val context = InstrumentationRegistry.getInstrumentation().targetContext
-        fun open() = Room.databaseBuilder(context, FormDatabase::class.java, name).addMigrations(MIGRATION_1_2).build()
+        fun open() = Room.databaseBuilder(context, FormDatabase::class.java, name).addMigrations(MIGRATION_1_2, MIGRATION_2_3).build()
         var database = open()
         try {
             val local = RoomFormLocalDataSource(database.formDao(), Dispatchers.IO)
@@ -62,4 +62,31 @@ class FormMigrationTest {
             assertEquals(Instant.ofEpochMilli(1234), snapshot.lastUpdated)
         } finally { database.close() }
     }
+    @Test
+    fun migrationFromTwoPreservesAnswersAndStartsDefinitionVersioning() = runBlocking {
+        helper.createDatabase(name, 2).apply {
+            execSQL("INSERT INTO form_metadata(id,lastUpdatedMillis) VALUES(0,1234)")
+            execSQL("INSERT INTO response_set(id,multipleSelection,snapshotId) VALUES(100,0,0)")
+            execSQL("INSERT INTO response_option(responseSetId,id,position,label,score) VALUES(100,1,0,'One',NULL)")
+            execSQL("INSERT INTO form_node(id,parentId,position,type,title,snapshotId) VALUES(1,NULL,0,'PAGE','Saved',0)")
+            execSQL("INSERT INTO form_node(id,parentId,position,type,content,responseSetId,snapshotId) VALUES(10,1,0,'CHOICE','Question',100,0)")
+            execSQL("INSERT INTO selected_response(questionId,responseSetId,optionId,snapshotId) VALUES(10,100,1,0)")
+            close()
+        }
+        helper.runMigrationsAndValidate(name, 3, true, MIGRATION_2_3).close()
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val database = Room.databaseBuilder(context, FormDatabase::class.java, name).addMigrations(MIGRATION_1_2, MIGRATION_2_3).build()
+        try {
+            val local = RoomFormLocalDataSource(database.formDao(), Dispatchers.IO)
+            val migrated = requireNotNull(local.observeForm().first())
+            assertEquals(0L, migrated.definitionVersion)
+            assertEquals(setOf(1L), migrated.selections[10]?.optionIds)
+            local.replaceForm(migrated.document, migrated.lastUpdated)
+            val refreshed = requireNotNull(local.observeForm().first())
+            assertEquals(1L, refreshed.definitionVersion)
+            assertEquals(migrated.selections, refreshed.selections)
+            assertEquals(migrated.lastUpdated, refreshed.lastUpdated)
+        } finally { database.close() }
+    }
+
 }

@@ -56,7 +56,7 @@ class FormFixturePersistenceTest {
             local().replaceForm(document, time)
             database.close()
             database = open()
-            assertEquals(fixture.file, FormSnapshot(document, time), snapshot())
+            assertEquals(fixture.file, FormSnapshot(document, time, definitionVersion = index + 1L), snapshot())
         }
     }
 

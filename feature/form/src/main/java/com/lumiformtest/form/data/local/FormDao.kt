@@ -20,7 +20,15 @@ import kotlinx.coroutines.flow.Flow
 internal abstract class FormDao {
     @Transaction
     @Query("SELECT * FROM form_metadata WHERE id = 0")
-    abstract fun observeForm(): Flow<StoredForm?>
+    abstract fun observeDefinition(): Flow<StoredFormDefinition?>
+
+    @Transaction
+    @Query("SELECT * FROM form_metadata WHERE id = 0")
+    abstract fun observeAnswers(): Flow<StoredFormAnswers?>
+
+    // Answers invalidate selected_response, so they do not reload image metadata.
+    @Query("SELECT * FROM form_node WHERE id = :imageId AND type = 'IMAGE'")
+    abstract fun observeImageNode(imageId: Long): Flow<FormNodeEntity?>
 
     @Transaction
     open suspend fun replaceForm(form: StoredForm) {
@@ -28,7 +36,9 @@ internal abstract class FormDao {
         val selections = reconcileSelections(readSelections(), form)
         clearNodes()
         clearResponseSets()
-        upsertMetadata(form.metadata)
+        // A definition version changes only with a committed replacement, even if the clock is unchanged.
+        val version = (readDefinitionVersion() ?: 0) + 1
+        upsertMetadata(form.metadata.copy(definitionVersion = version))
         insertResponseSets(form.responseSets.map { it.definition })
         insertResponses(form.responseSets.flatMap { it.responses })
         insertNodes(form.nodes)
@@ -51,6 +61,9 @@ internal abstract class FormDao {
 
     @Query("SELECT * FROM selected_response")
     protected abstract suspend fun readSelections(): List<SelectedResponseEntity>
+
+    @Query("SELECT definitionVersion FROM form_metadata WHERE id = 0")
+    protected abstract suspend fun readDefinitionVersion(): Long?
 
     @Query("SELECT * FROM selected_response WHERE questionId = :questionId")
     protected abstract suspend fun readQuestionSelections(questionId: Long): List<SelectedResponseEntity>

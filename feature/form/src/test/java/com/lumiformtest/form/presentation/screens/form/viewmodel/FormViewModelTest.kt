@@ -412,6 +412,7 @@ class FormViewModelTest {
     )
 
     private class FakeRepository(initial: FormObservation? = null) : FormRepository {
+        override fun observeImage(imageId: Long): kotlinx.coroutines.flow.Flow<com.lumiformtest.form.domain.model.ImageObservation> = error("Not used")
         val observations by lazy { MutableSharedFlow<FormObservation>(replay = 1).apply { initial?.let { tryEmit(it) } } }
         var observeCalls = 0
         var activeObservers = 0

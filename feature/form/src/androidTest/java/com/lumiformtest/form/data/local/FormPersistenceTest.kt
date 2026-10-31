@@ -65,7 +65,7 @@ class FormPersistenceTest {
 
         local().replaceForm(FormDocument(emptyList()), time)
 
-        assertEquals(FormSnapshot(FormDocument(emptyList()), time), local().observeForm().first())
+        assertEquals(FormSnapshot(FormDocument(emptyList()), time, definitionVersion = 1), local().observeForm().first())
     }
 
     @Test
@@ -75,7 +75,7 @@ class FormPersistenceTest {
         database.close()
         database = openDatabase()
 
-        assertEquals(FormSnapshot(document, time), local().observeForm().first())
+        assertEquals(FormSnapshot(document, time, definitionVersion = 1), local().observeForm().first())
     }
 
     @Test
@@ -89,7 +89,7 @@ class FormPersistenceTest {
         )
 
         assertEquals(RefreshFormResult.Failure(FormRefreshFailure.FETCH), repository.refreshForm())
-        assertEquals(FormObservation.Snapshot(FormSnapshot(document(), time)), repository.observeForm().first())
+        assertEquals(FormObservation.Snapshot(FormSnapshot(document(), time, definitionVersion = 1)), repository.observeForm().first())
     }
 
     @Test
@@ -107,7 +107,7 @@ class FormPersistenceTest {
         }
 
         assertNotNull("The parent foreign key must be enforced", failure)
-        assertEquals(FormSnapshot(document(), time), local().observeForm().first())
+        assertEquals(FormSnapshot(document(), time, definitionVersion = 1), local().observeForm().first())
     }
 
     @Test
@@ -124,7 +124,7 @@ class FormPersistenceTest {
 
         assertNotNull("SQLite failures should be translated by the local data source", failure)
         assertNotNull(failure?.cause as? SQLException)
-        assertEquals(FormSnapshot(valid, time), local().observeForm().first())
+        assertEquals(FormSnapshot(valid, time, definitionVersion = 1), local().observeForm().first())
     }
 
     @Test
@@ -141,7 +141,7 @@ class FormPersistenceTest {
         local().replaceForm(replacement, time.plusSeconds(60))
 
         assertEquals(
-            listOf(FormSnapshot(document(), time), FormSnapshot(replacement, time.plusSeconds(60))),
+            listOf(FormSnapshot(document(), time, definitionVersion = 1), FormSnapshot(replacement, time.plusSeconds(60), definitionVersion = 2)),
             values.await()
         )
     }

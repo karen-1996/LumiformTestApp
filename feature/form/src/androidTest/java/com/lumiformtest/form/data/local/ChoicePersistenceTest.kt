@@ -243,7 +243,7 @@ class ChoicePersistenceTest {
         assertEquals(1, snapshot().selections[10]?.optionIds?.size)
     }
 
-    private fun open() = Room.databaseBuilder(context, FormDatabase::class.java, name).addMigrations(MIGRATION_1_2).build()
+    private fun open() = Room.databaseBuilder(context, FormDatabase::class.java, name).addMigrations(MIGRATION_1_2, MIGRATION_2_3).build()
     private fun local() = RoomFormLocalDataSource(database.formDao(), Dispatchers.IO)
     private suspend fun snapshot() = requireNotNull(local().observeForm().first())
     private suspend fun tap(questionId: Long, optionId: Long, setId: Long = 100) {

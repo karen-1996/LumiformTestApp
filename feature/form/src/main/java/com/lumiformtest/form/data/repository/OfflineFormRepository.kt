@@ -8,6 +8,8 @@ import com.lumiformtest.form.data.remote.NoInternetConnectionException
 import com.lumiformtest.form.domain.model.FormRefreshFailure
 import com.lumiformtest.form.domain.model.FormObservation
 import com.lumiformtest.form.domain.model.FormSnapshot
+import com.lumiformtest.form.domain.model.FormImage
+import com.lumiformtest.form.domain.model.ImageObservation
 import com.lumiformtest.form.domain.model.ChoiceOption
 import com.lumiformtest.form.domain.model.ChoiceSelectionResult
 import com.lumiformtest.form.domain.model.ChoiceSelectionFailure
@@ -40,6 +42,12 @@ internal class OfflineFormRepository @Inject constructor(
         .map<FormSnapshot?, FormObservation> { FormObservation.Snapshot(it) }
         .catch { error ->
             if (error is FormStorageException) emit(FormObservation.ReadFailure) else throw error
+        }
+
+    override fun observeImage(imageId: Long) = local.observeImage(imageId)
+        .map<FormImage?, ImageObservation> { ImageObservation.Content(it) }
+        .catch { error ->
+            if (error is FormStorageException) emit(ImageObservation.ReadFailure) else throw error
         }
 
     override suspend fun refreshForm(): RefreshFormResult = refreshMutex.withLock {

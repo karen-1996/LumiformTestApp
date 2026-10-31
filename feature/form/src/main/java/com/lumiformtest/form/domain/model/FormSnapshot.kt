@@ -5,7 +5,8 @@ import java.time.Instant
 internal data class FormSnapshot(
     val document: FormDocument,
     val lastUpdated: Instant,
-    val selections: Map<Long, ChoiceSelection> = emptyMap()
+    val selections: Map<Long, ChoiceSelection> = emptyMap(),
+    val definitionVersion: Long = 0
 )
 
 internal sealed interface RefreshFormResult {

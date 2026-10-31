@@ -1,0 +1,386 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 3,
+    "identityHash": "7c85e7741658f3b0ed7debeff42361e4",
+    "entities": [
+      {
+        "tableName": "form_metadata",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `lastUpdatedMillis` INTEGER NOT NULL, `definitionVersion` INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastUpdatedMillis",
+            "columnName": "lastUpdatedMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "definitionVersion",
+            "columnName": "definitionVersion",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "form_node",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `parentId` INTEGER, `position` INTEGER NOT NULL, `type` TEXT NOT NULL, `title` TEXT, `content` TEXT, `imageUrl` TEXT, `responseSetId` INTEGER, `snapshotId` INTEGER NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`snapshotId`) REFERENCES `form_metadata`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION , FOREIGN KEY(`parentId`) REFERENCES `form_node`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`responseSetId`) REFERENCES `response_set`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "parentId",
+            "columnName": "parentId",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "position",
+            "columnName": "position",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "content",
+            "columnName": "content",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "imageUrl",
+            "columnName": "imageUrl",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "responseSetId",
+            "columnName": "responseSetId",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "snapshotId",
+            "columnName": "snapshotId",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_form_node_snapshotId",
+            "unique": false,
+            "columnNames": [
+              "snapshotId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_form_node_snapshotId` ON `${TABLE_NAME}` (`snapshotId`)"
+          },
+          {
+            "name": "index_form_node_parentId",
+            "unique": false,
+            "columnNames": [
+              "parentId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_form_node_parentId` ON `${TABLE_NAME}` (`parentId`)"
+          },
+          {
+            "name": "index_form_node_responseSetId",
+            "unique": false,
+            "columnNames": [
+              "responseSetId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_form_node_responseSetId` ON `${TABLE_NAME}` (`responseSetId`)"
+          },
+          {
+            "name": "index_form_node_id_responseSetId",
+            "unique": true,
+            "columnNames": [
+              "id",
+              "responseSetId"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_form_node_id_responseSetId` ON `${TABLE_NAME}` (`id`, `responseSetId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "form_metadata",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "snapshotId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "form_node",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "parentId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "response_set",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "responseSetId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "response_set",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `multipleSelection` INTEGER NOT NULL, `snapshotId` INTEGER NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`snapshotId`) REFERENCES `form_metadata`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "multipleSelection",
+            "columnName": "multipleSelection",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "snapshotId",
+            "columnName": "snapshotId",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_response_set_snapshotId",
+            "unique": false,
+            "columnNames": [
+              "snapshotId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_response_set_snapshotId` ON `${TABLE_NAME}` (`snapshotId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "form_metadata",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "snapshotId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "response_option",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`responseSetId` INTEGER NOT NULL, `id` INTEGER NOT NULL, `position` INTEGER NOT NULL, `label` TEXT NOT NULL, `score` INTEGER, PRIMARY KEY(`responseSetId`, `id`), FOREIGN KEY(`responseSetId`) REFERENCES `response_set`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "responseSetId",
+            "columnName": "responseSetId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "position",
+            "columnName": "position",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "label",
+            "columnName": "label",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "score",
+            "columnName": "score",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "responseSetId",
+            "id"
+          ]
+        },
+        "foreignKeys": [
+          {
+            "table": "response_set",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "responseSetId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "selected_response",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`questionId` INTEGER NOT NULL, `responseSetId` INTEGER NOT NULL, `optionId` INTEGER NOT NULL, `snapshotId` INTEGER NOT NULL, PRIMARY KEY(`questionId`, `responseSetId`, `optionId`), FOREIGN KEY(`questionId`, `responseSetId`) REFERENCES `form_node`(`id`, `responseSetId`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`responseSetId`, `optionId`) REFERENCES `response_option`(`responseSetId`, `id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`snapshotId`) REFERENCES `form_metadata`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "questionId",
+            "columnName": "questionId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "responseSetId",
+            "columnName": "responseSetId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "optionId",
+            "columnName": "optionId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "snapshotId",
+            "columnName": "snapshotId",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "questionId",
+            "responseSetId",
+            "optionId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_selected_response_responseSetId_optionId",
+            "unique": false,
+            "columnNames": [
+              "responseSetId",
+              "optionId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_selected_response_responseSetId_optionId` ON `${TABLE_NAME}` (`responseSetId`, `optionId`)"
+          },
+          {
+            "name": "index_selected_response_snapshotId",
+            "unique": false,
+            "columnNames": [
+              "snapshotId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_selected_response_snapshotId` ON `${TABLE_NAME}` (`snapshotId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "form_node",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "questionId",
+              "responseSetId"
+            ],
+            "referencedColumns": [
+              "id",
+              "responseSetId"
+            ]
+          },
+          {
+            "table": "response_option",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "responseSetId",
+              "optionId"
+            ],
+            "referencedColumns": [
+              "responseSetId",
+              "id"
+            ]
+          },
+          {
+            "table": "form_metadata",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "snapshotId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '7c85e7741658f3b0ed7debeff42361e4')"
+    ]
+  }
+}
