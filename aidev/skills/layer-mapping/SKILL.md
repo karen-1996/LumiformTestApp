@@ -7,7 +7,7 @@ description: Define or change feature models and explicit mappings between data,
 
 - Keep separate remote DTOs, Room entities, domain models, and UI models inside the feature.
 - Put DTO/entity to domain mappings in `data/mapper`. Add domain-to-entity or request mappings when a write operation needs them.
-- Put domain-to-UI mappings in `presentation/mapper` and UI models in `presentation/model`. Map use-case results before updating screen state.
+- Put domain-to-UI mappings and UI models in the owning screen's `mapper` and `model` packages under `presentation/screens/<screen>`. Map use-case results before updating screen state.
 - Keep domain independent of data and UI types. Repository and use-case contracts expose domain models; screen state and composables expose presentation models.
 - Keep resource references, hierarchy depth, and display-specific formatting in presentation. Do not make domain models depend on Android resources.
 - Keep mappers deterministic and free of network calls, database calls, coroutine launches, or state mutation. Use focused functions or classes without a generic mapping framework.

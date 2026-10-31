@@ -38,7 +38,7 @@ import coil3.request.ImageRequest
 import coil3.size.Precision
 import coil3.size.Scale
 import com.lumiformtest.design.theme.Dimensions
-import com.lumiformtest.form.presentation.preview.FormPreviewTheme
+import com.lumiformtest.form.presentation.screens.form.preview.FormPreviewTheme
 import com.lumiformtest.form.presentation.navigation.imageTransitionPreview
 import com.lumiformtest.form.presentation.navigation.movingImagePreview
 import com.lumiformtest.resources.R

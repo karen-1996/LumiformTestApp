@@ -5,6 +5,7 @@ They are project-scoped guidance; the user's current instructions take priority.
 
 - Place feature modules under `feature/`; `:form` maps to `feature/form`.
 - Keep `presentation`, `domain`, `data`, and `di` inside each feature module.
+- Group presentation by screen under `presentation/screens/<screen>`, with its own `components`, `mapper`, `model`, and `viewmodel` packages. Keep screen preview files and helpers in its `preview` package; component previews can stay beside their components.
 - Keep OkHttp, interceptors, base URL, and Retrofit provisioning in `:networking`. Features declare request APIs and create them from the injected Retrofit instance.
 - Keep shared Android `res/` files in `:resources`, including UI strings, icons, XML themes, and configuration XML. Consumers import `com.lumiformtest.resources.R`; Compose theme code stays in `:design`. App-owned non-translatable identity strings, such as `app_name`, belong in `app/src/main/res/values/strings_non_translatable.xml` with `translatable="false"`.
 - Use explicit mappers at data/domain and domain/UI boundaries. Keep DTOs and entities out of domain and UI contracts, and domain models out of screen state.

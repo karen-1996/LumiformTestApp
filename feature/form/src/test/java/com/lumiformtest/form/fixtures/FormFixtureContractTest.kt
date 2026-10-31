@@ -5,7 +5,7 @@ import com.lumiformtest.form.data.mapper.FormEntityMapper
 import com.lumiformtest.form.data.remote.FormJsonParser
 import com.lumiformtest.form.data.remote.InvalidFormContentException
 import com.lumiformtest.form.domain.model.FormSnapshot
-import com.lumiformtest.form.presentation.mapper.FormUiMapper
+import com.lumiformtest.form.presentation.screens.form.mapper.FormUiMapper
 import java.time.Instant
 import kotlin.random.Random
 import org.junit.Assert.assertEquals

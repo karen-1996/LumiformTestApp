@@ -104,7 +104,9 @@ if (coverageEnabled) {
 
     val coverageExclusions = listOf(
         // UI rendering, previews, and Compose navigation are checked on a device.
-        "**/presentation/components/**", "**/presentation/screens/**", "**/presentation/preview/**",
+        "**/presentation/components/**", "**/presentation/screens/*/preview/**",
+        "**/presentation/screens/*/components/**", "**/presentation/screens/*/*ScreenKt*",
+        "**/presentation/screens/*/*RouteKt*", "**/presentation/screens/*/*PreviewsKt*",
         "**/presentation/navigation/FormEntriesKt*", "**/presentation/navigation/ImageTransition*",
         "**/presentation/navigation/FormImageTransitionState*", "**/FormScreenTestActivity*",
         // Android/SQLite adapters keep their device tests; pure storage logic stays in scope.

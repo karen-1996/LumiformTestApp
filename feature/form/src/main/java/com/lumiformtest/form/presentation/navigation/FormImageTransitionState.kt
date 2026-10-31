@@ -8,8 +8,8 @@ import androidx.compose.runtime.setValue
 import coil3.Image
 import coil3.ImageLoader
 import coil3.memory.MemoryCache
-import com.lumiformtest.form.presentation.model.FormRowUiModel
-import com.lumiformtest.form.presentation.model.ImageUiModel
+import com.lumiformtest.form.presentation.screens.form.model.FormRowUiModel
+import com.lumiformtest.form.presentation.screens.image.model.ImageUiModel
 
 class FormImageTransitionState internal constructor() {
     internal var preview: ImageTransitionPreview? by mutableStateOf(null)

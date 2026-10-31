@@ -74,6 +74,17 @@ I keep the layers inside each feature, so changes to the form stay together.
 Feature modules live next to each other under `feature/`.
 There are no separate data or domain Gradle modules.
 
+Presentation code is grouped by screen:
+
+```text
+presentation/
+  screens/
+    form/       screen, route, components, mapper, model, preview, viewmodel
+    image/      screen, route, mapper, model, viewmodel
+  components/   shared image rendering and loader
+  navigation/   destinations and shared transitions
+```
+
 Shared Android `res/` files live in `resources/src/main/res`. Modules that use them
 depend directly on `:resources` and import `com.lumiformtest.resources.R`.
 I keep Compose theme code and reusable UI components in `:design`, as in ASA.
@@ -91,7 +102,7 @@ I use separate models and explicit mappers at each layer boundary:
 
 ```text
 DTOs / Room entities -> domain models -> UI models
-       data/mapper              presentation/mapper
+       data/mapper              screens/<screen>/mapper
 ```
 
 Data mappers handle storage and API formats. Presentation mappers prepare domain
@@ -442,7 +453,7 @@ Baseline measured locally on **2026-10-31**:
 
 | Measurement | Result |
 | --- | --- |
-| JVM logic line coverage | **98.1%** — 673/686 lines |
+| JVM logic line coverage | **98.1%** — 689/702 lines |
 | JVM logic branch coverage | **91.3%** — 263/288 branches |
 | JVM tests | **132 passed** |
 | Device tests | **63 passed** |
@@ -470,7 +481,9 @@ Missing execution data or an empty coverage scope also fails the gate.
 The scope keeps handwritten JVM logic: MVI/ViewModels and contracts, domain
 models/use cases, DTO parsing/validation, repositories, mappers, response
 reconciliation, image-file caching/fetching, and the HTTP logging interceptor.
-Uncovered code in those areas stays in the denominator.
+Uncovered code in those areas stays in the denominator. ViewModels, contracts,
+models, and mappers remain included under `screens/form` and `screens/image`;
+only rendering code is excluded there.
 
 Excluded from this focused JVM metric:
 
@@ -521,7 +534,7 @@ Each screen and visual component has named, themed previews beside its code.
 They cover content, loading/failure, selected/disabled choices, dark mode, and
 long text where relevant. Screen previews use sample UI models instead of Hilt
 routes. Shared fixtures live in
-[FormPreviewData.kt](feature/form/src/main/java/com/lumiformtest/form/presentation/preview/FormPreviewData.kt).
+[FormPreviewData.kt](feature/form/src/main/java/com/lumiformtest/form/presentation/screens/form/preview/FormPreviewData.kt).
 Image previews use a local drawable and never create the image loader or make
 network/database calls. Preview wrappers and non-visual state helpers are covered
 through their screen/component previews.

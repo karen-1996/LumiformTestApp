@@ -3,8 +3,8 @@ package com.lumiformtest.form.presentation.navigation
 import androidx.compose.animation.SharedTransitionScope
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
-import com.lumiformtest.form.presentation.screens.FormRoute
-import com.lumiformtest.form.presentation.screens.ImageRoute
+import com.lumiformtest.form.presentation.screens.form.FormRoute
+import com.lumiformtest.form.presentation.screens.image.ImageRoute
 
 fun EntryProviderScope<NavKey>.formEntries(
     onNavigate: (FormDestination) -> Unit,
